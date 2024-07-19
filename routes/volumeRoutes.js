@@ -5,7 +5,7 @@ const authMiddleware = require("../middlewares/authMiddleware");
 const router = express.Router();
 
 router.get("/volumes", volumeController.getVolumes);
-router.get("/skeletal-system", volumeController.getSkeletalTerms);
+router.get("/skeletal-terms", volumeController.getSkeletalTerms);
 router.get("/sample-terms", volumeController.getSampleTerms);
 router.get("/sample-terms/:id", volumeController.getSampleTermDetails);
 router.get("/skeletal-system/:id", volumeController.getSkeletalTermDetails);
