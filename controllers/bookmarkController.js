@@ -72,6 +72,7 @@ exports.getSampleTermBookmarks = (req, res) => {
     FROM sample_term_bookmarks b
     JOIN sample_term c ON b.term_id = c.id
     WHERE b.bookmark_by = ?
+    ORDER BY c.term 
   `;
   db.query(query, [user_mail], (err, results) => {
     if (err) {
@@ -191,6 +192,7 @@ exports.getSkeletalSystemBookmarks = (req, res) => {
     FROM skeletal_system_bookmarks b
     JOIN skeletal_system c ON b.term_id = c.id
     WHERE b.bookmark_by = ?
+    ORDER BY c.term 
   `;
   db.query(query, [user_mail], (err, results) => {
     if (err) {
