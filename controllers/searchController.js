@@ -10,8 +10,10 @@ exports.searchSampleTerms = (req, res) => {
   }
 
   const query = `
-    SELECT term, id FROM sample_term WHERE BINARY term LIKE ?
-  `;
+  SELECT term, id
+  FROM sample_term 
+  WHERE MATCH(term) AGAINST(? IN BOOLEAN MODE)
+`;
 
   const searchValue = `%${searchTerm}%`;
 
@@ -37,8 +39,10 @@ exports.searchSkeletalSystemTerms = (req, res) => {
   }
 
   const query = `
-    SELECT term, id FROM skeletal_system WHERE BINARY term LIKE ?
-  `;
+  SELECT term, id 
+  FROM skeletal_system 
+  WHERE MATCH(term) AGAINST(? IN BOOLEAN MODE)
+`;
 
   const searchValue = `%${searchTerm}%`;
 
