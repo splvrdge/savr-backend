@@ -9,12 +9,14 @@ exports.searchSampleTerms = (req, res) => {
       .json({ success: false, message: "Search term is required" });
   }
 
+  // Use backticks for the query to ensure proper string interpolation
   const query = `
-  SELECT term, id
-  FROM sample_term 
-  WHERE MATCH(term) AGAINST(? IN BOOLEAN MODE)
-`;
+    SELECT term, id 
+    FROM sample_term 
+    WHERE term LIKE ?
+  `;
 
+  // Ensure that the search term is properly formatted
   const searchValue = `%${searchTerm}%`;
 
   db.query(query, [searchValue], (err, results) => {
@@ -39,10 +41,10 @@ exports.searchSkeletalSystemTerms = (req, res) => {
   }
 
   const query = `
-  SELECT term, id 
-  FROM skeletal_system 
-  WHERE MATCH(term) AGAINST(? IN BOOLEAN MODE)
-`;
+    SELECT term, id 
+    FROM skeletal_system 
+    WHERE term LIKE ?
+  `;
 
   const searchValue = `%${searchTerm}%`;
 
