@@ -10,7 +10,7 @@ exports.searchSampleTerms = (req, res) => {
   }
 
   const query = `
-    SELECT term, id FROM sample_term WHERE term LIKE ?
+    SELECT term, id FROM sample_term WHERE BINARY term LIKE ?
   `;
 
   const searchValue = `%${searchTerm}%`;
@@ -37,7 +37,7 @@ exports.searchSkeletalSystemTerms = (req, res) => {
   }
 
   const query = `
-    SELECT term, id FROM skeletal_system WHERE term LIKE ?
+    SELECT term, id FROM skeletal_system WHERE BINARY term LIKE ?
   `;
 
   const searchValue = `%${searchTerm}%`;
