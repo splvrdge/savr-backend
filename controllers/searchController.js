@@ -1,61 +1,59 @@
 const db = require("../config/db");
 
-exports.searchSampleTerms = (req, res) => {
-  const searchTerm = req.query.q;
-
-  if (!searchTerm) {
-    return res
-      .status(400)
-      .json({ success: false, message: "Search term is required" });
-  }
-
-  // Use backticks for the query to ensure proper string interpolation
-  const query = `
-    SELECT term, id 
-    FROM sample_term 
-    WHERE term LIKE ?
-  `;
-
-  // Ensure that the search term is properly formatted
-  const searchValue = `%${searchTerm}%`;
-
-  db.query(query, [searchValue], (err, results) => {
-    if (err) {
-      console.error("Error executing search query:", err);
-      return res
-        .status(500)
-        .json({ success: false, message: "Internal server error" });
-    }
-
-    res.json({ success: true, terms: results });
-  });
+// Helper function to normalize and sort characters in a string
+const normalizeString = (str) => {
+  return str
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "")
+    .split("")
+    .sort()
+    .join("");
 };
 
-exports.searchSkeletalSystemTerms = (req, res) => {
-  const searchTerm = req.query.q;
+// Search function
+const searchTerms = (query, terms) => {
+  const normalizedQuery = normalizeString(query);
+  return terms.filter((term) =>
+    normalizeString(term).includes(normalizedQuery)
+  );
+};
 
-  if (!searchTerm) {
-    return res
-      .status(400)
-      .json({ success: false, message: "Search term is required" });
-  }
-
-  const query = `
-    SELECT term, id 
-    FROM skeletal_system 
-    WHERE term LIKE ?
-  `;
-
-  const searchValue = `%${searchTerm}%`;
-
-  db.query(query, [searchValue], (err, results) => {
-    if (err) {
-      console.error("Error executing search query:", err);
+exports.searchSampleTerms = async (req, res) => {
+  try {
+    const query = req.query.q;
+    if (!query) {
       return res
-        .status(500)
-        .json({ success: false, message: "Internal server error" });
+        .status(400)
+        .json({ success: false, message: "Query is required" });
     }
 
-    res.json({ success: true, terms: results });
-  });
+    const [results] = await db.execute("SELECT term FROM sample_terms");
+    const terms = results.map((row) => row.term);
+    const matchedTerms = searchTerms(query, terms);
+
+    res.json({ success: true, terms: matchedTerms });
+  } catch (error) {
+    console.error("Error fetching sample terms:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+exports.searchSkeletalSystemTerms = async (req, res) => {
+  try {
+    const query = req.query.q;
+    if (!query) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Query is required" });
+    }
+
+    const [results] = await db.execute("SELECT term FROM skeletal_system");
+    const terms = results.map((row) => row.term);
+    const matchedTerms = searchTerms(query, terms);
+
+    res.json({ success: true, terms: matchedTerms });
+  } catch (error) {
+    console.error("Error fetching skeletal system terms:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
 };
