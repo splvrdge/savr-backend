@@ -1,7 +1,15 @@
 const db = require("../config/db");
 
 exports.getVolumes = (req, res) => {
-  const query = "SELECT * FROM volume WHERE volume_id != 1 ORDER BY title";
+  const query = `
+    SELECT * FROM volume
+    ORDER BY 
+      CASE 
+        WHEN volume_id = 1 THEN 0 
+        ELSE 1 
+      END, 
+      title
+  `;
   db.query(query, (err, results) => {
     if (err) {
       console.error("Error fetching volumes:", err);
