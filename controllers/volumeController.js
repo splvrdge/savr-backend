@@ -1,7 +1,7 @@
 const db = require("../config/db");
 
 exports.getVolumes = (req, res) => {
-  const query = "SELECT title, status FROM volume";
+  const query = "SELECT * FROM volume WHERE volume_id != 1 ORDER BY title";
   db.query(query, (err, results) => {
     if (err) {
       console.error("Error fetching volumes:", err);
@@ -10,32 +10,6 @@ exports.getVolumes = (req, res) => {
         .json({ success: false, message: "Internal server error" });
     }
     res.json({ success: true, volumes: results });
-  });
-};
-
-exports.getSkeletalTerms = (req, res) => {
-  const query = "SELECT term, id FROM skeletal_system ORDER BY term";
-  db.query(query, (err, results) => {
-    if (err) {
-      console.error("Error fetching skeletal terms:", err);
-      return res
-        .status(500)
-        .json({ success: false, message: "Internal server error" });
-    }
-    res.json({ success: true, terms: results });
-  });
-};
-
-exports.getPlaneTerms = (req, res) => {
-  const query = "SELECT term, id FROM plane_system ORDER BY term";
-  db.query(query, (err, results) => {
-    if (err) {
-      console.error("Error fetching Plane and Directional Terms:", err);
-      return res
-        .status(500)
-        .json({ success: false, message: "Internal server error" });
-    }
-    res.json({ success: true, terms: results });
   });
 };
 
@@ -66,9 +40,184 @@ exports.getSampleTermDetails = (req, res) => {
   });
 };
 
+exports.getSkeletalTerms = (req, res) => {
+  const query = "SELECT term, id FROM skeletal_system ORDER BY term";
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error("Error fetching skeletal terms:", err);
+      return res
+        .status(500)
+        .json({ success: false, message: "Internal server error" });
+    }
+    res.json({ success: true, terms: results });
+  });
+};
+
 exports.getSkeletalTermDetails = (req, res) => {
   const id = req.params.id;
   const query = `SELECT * FROM skeletal_system WHERE id = ?`;
+
+  db.query(query, [id], (err, results) => {
+    if (err) {
+      console.error("Error fetching term details:", err);
+      res.status(500).send("Error fetching term details");
+    } else {
+      res.json(results[0]);
+    }
+  });
+};
+
+exports.getCardiovascularTerms = (req, res) => {
+  const query = "SELECT term, id FROM cardiovascular_system ORDER BY term";
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error("Error fetching Cardiovascular Terms:", err);
+      return res
+        .status(500)
+        .json({ success: false, message: "Internal server error" });
+    }
+    res.json({ success: true, terms: results });
+  });
+};
+
+exports.getCardiovascularTermDetails = (req, res) => {
+  const id = req.params.id;
+  const query = `SELECT * FROM cardiovascular_system WHERE id = ?`;
+
+  db.query(query, [id], (err, results) => {
+    if (err) {
+      console.error("Error fetching term details:", err);
+      res.status(500).send("Error fetching term details");
+    } else {
+      res.json(results[0]);
+    }
+  });
+};
+
+exports.getIntegumetaryTerms = (req, res) => {
+  const query = "SELECT term, id FROM integumentary_system ORDER BY term";
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error("Error fetching Integumentary Terms:", err);
+      return res
+        .status(500)
+        .json({ success: false, message: "Internal server error" });
+    }
+    res.json({ success: true, terms: results });
+  });
+};
+
+exports.getIntegumetaryTermDetails = (req, res) => {
+  const id = req.params.id;
+  const query = `SELECT * FROM integumentary_system WHERE id = ?`;
+
+  db.query(query, [id], (err, results) => {
+    if (err) {
+      console.error("Error fetching term details:", err);
+      res.status(500).send("Error fetching term details");
+    } else {
+      res.json(results[0]);
+    }
+  });
+};
+
+exports.getNervousTerms = (req, res) => {
+  const query = "SELECT term, id FROM nervous_system ORDER BY term";
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error("Error fetching Nervous Terms:", err);
+      return res
+        .status(500)
+        .json({ success: false, message: "Internal server error" });
+    }
+    res.json({ success: true, terms: results });
+  });
+};
+
+exports.getNervousTermDetails = (req, res) => {
+  const id = req.params.id;
+  const query = `SELECT * FROM nervous_system WHERE id = ?`;
+
+  db.query(query, [id], (err, results) => {
+    if (err) {
+      console.error("Error fetching term details:", err);
+      res.status(500).send("Error fetching term details");
+    } else {
+      res.json(results[0]);
+    }
+  });
+};
+
+exports.getReproductiveTerms = (req, res) => {
+  const query = "SELECT term, id FROM reproductive_system ORDER BY term";
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error("Error fetching Reproductive Terms:", err);
+      return res
+        .status(500)
+        .json({ success: false, message: "Internal server error" });
+    }
+    res.json({ success: true, terms: results });
+  });
+};
+
+exports.getReproductiveTermDetails = (req, res) => {
+  const id = req.params.id;
+  const query = `SELECT * FROM reproductive_system WHERE id = ?`;
+
+  db.query(query, [id], (err, results) => {
+    if (err) {
+      console.error("Error fetching term details:", err);
+      res.status(500).send("Error fetching term details");
+    } else {
+      res.json(results[0]);
+    }
+  });
+};
+
+exports.getRespiratoryTerms = (req, res) => {
+  const query = "SELECT term, id FROM respiratory_system ORDER BY term";
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error("Error fetching Respiratory Terms:", err);
+      return res
+        .status(500)
+        .json({ success: false, message: "Internal server error" });
+    }
+    res.json({ success: true, terms: results });
+  });
+};
+
+exports.getRespiratoryTermDetails = (req, res) => {
+  const id = req.params.id;
+  const query = `SELECT * FROM respiratory_system WHERE id = ?`;
+
+  db.query(query, [id], (err, results) => {
+    if (err) {
+      console.error("Error fetching term details:", err);
+      res.status(500).send("Error fetching term details");
+    } else {
+      res.json(results[0]);
+    }
+  });
+};
+
+exports.getUrinaryTerms = (req, res) => {
+  const query = "SELECT term, id FROM urinary_system ORDER BY term";
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error("Error fetching Urinary Terms:", err);
+      return res
+        .status(500)
+        .json({ success: false, message: "Internal server error" });
+    }
+    res.json({ success: true, terms: results });
+  });
+};
+
+exports.getUrinaryTermDetails = (req, res) => {
+  const id = req.params.id;
+  const query = `SELECT * FROM urinary_system WHERE id = ?`;
 
   db.query(query, [id], (err, results) => {
     if (err) {
