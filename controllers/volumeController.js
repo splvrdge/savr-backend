@@ -94,7 +94,7 @@ exports.getCardiovascularTermDetails = (req, res) => {
   });
 };
 
-exports.getIntegumetaryTerms = (req, res) => {
+exports.getIntegumentaryTerms = (req, res) => {
   const query = "SELECT term, id FROM integumentary_system ORDER BY term";
   db.query(query, (err, results) => {
     if (err) {
@@ -107,7 +107,7 @@ exports.getIntegumetaryTerms = (req, res) => {
   });
 };
 
-exports.getIntegumetaryTermDetails = (req, res) => {
+exports.getIntegumentaryTermDetails = (req, res) => {
   const id = req.params.id;
   const query = `SELECT * FROM integumentary_system WHERE id = ?`;
 
