@@ -180,4 +180,26 @@ router.get(
   bookmarkController.isUrinarySystemBookmarked
 );
 
+// Muscle English Bookmarks
+router.post(
+  "/latin-muscle-names-in-english/add",
+  authMiddleware.verifyToken,
+  bookmarkController.addMuscleEnglishBookmark
+);
+router.post(
+  "/latin-muscle-names-in-english/remove",
+  authMiddleware.verifyToken,
+  bookmarkController.removeMuscleEnglishBookmark
+);
+router.get(
+  "/latin-muscle-names-in-english",
+  authMiddleware.verifyToken,
+  bookmarkController.getMuscleEnglishBookmarks
+);
+router.get(
+  "/latin-muscle-names-in-english/:term_id",
+  authMiddleware.verifyToken,
+  bookmarkController.isMuscleEnglishBookmarked
+);
+
 module.exports = router;

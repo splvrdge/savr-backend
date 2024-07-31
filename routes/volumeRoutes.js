@@ -48,4 +48,14 @@ router.get(
 router.get("/urinary-terms", volumeController.getUrinaryTerms);
 router.get("/urinary-system/:id", volumeController.getUrinaryTermDetails);
 
+// Latin Muscle Names in English
+router.get(
+  "/latin-muscle-names-in-english",
+  volumeController.getMuscleEnglishTerms
+);
+router.get(
+  "/latin-muscle-names-in-english/:id",
+  volumeController.getMuscleEnglishTermDetails
+);
+
 module.exports = router;

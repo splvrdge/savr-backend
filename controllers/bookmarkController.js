@@ -974,3 +974,125 @@ exports.isUrinarySystemBookmarked = (req, res) => {
     });
   });
 };
+
+// Muscular System English
+
+// Add a MuscleEnglish bookmark
+exports.addUMuscleEnglishBookmark = (req, res) => {
+  const { term_id } = req.body;
+  const user_mail = req.user_mail;
+
+  if (!term_id || !user_mail) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Missing required fields" });
+  }
+
+  const query = `INSERT INTO muscle_english_bookmarks (bookmark_by, term_id) VALUES (?, ?)`;
+  db.query(query, [user_mail, term_id], (err) => {
+    if (err) {
+      if (err.code === "ER_DUP_ENTRY") {
+        return res
+          .status(409)
+          .json({ success: false, message: "Bookmark already exists" });
+      }
+      console.error("Error adding Muscle English bookmark:", err);
+      return res
+        .status(500)
+        .json({ success: false, message: "Internal server error" });
+    }
+    res.json({
+      success: true,
+      message: "Muscle English bookmark added successfully",
+    });
+  });
+};
+
+// Remove a Muscle English bookmark
+exports.removeMuscleEnglishBookmark = (req, res) => {
+  const { term_id } = req.body;
+  const user_mail = req.user_mail;
+
+  if (!term_id || !user_mail) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Missing required fields" });
+  }
+
+  const query = `DELETE FROM muscle_english_bookmarks WHERE bookmark_by = ? AND term_id = ?`;
+  db.query(query, [user_mail, term_id], (err) => {
+    if (err) {
+      console.error("Error removing Muscle English bookmark:", err);
+      return res
+        .status(500)
+        .json({ success: false, message: "Internal server error" });
+    }
+    res.json({
+      success: true,
+      message: "Muscle English bookmark removed successfully",
+    });
+  });
+};
+
+// Display all Muscle English bookmarks for the current user
+exports.getMuscleEnglishBookmarks = (req, res) => {
+  const user_mail = req.user_mail;
+
+  if (!user_mail) {
+    return res
+      .status(400)
+      .json({ success: false, message: "User not authenticated" });
+  }
+
+  const query = `
+    SELECT c.term, c.id
+    FROM muscle_english_bookmarks b
+    JOIN muscle_english c ON b.term_id = c.id
+    WHERE b.bookmark_by = ?
+    ORDER BY c.term 
+  `;
+  db.query(query, [user_mail], (err, results) => {
+    if (err) {
+      console.error("Error fetching Muscle English bookmarks:", err);
+      return res
+        .status(500)
+        .json({ success: false, message: "Internal server error" });
+    }
+    res.json({ success: true, bookmarks: results });
+  });
+};
+
+// Check if a Muscle English term is bookmarked by the current user
+exports.isMuscleEnglishBookmarked = (req, res) => {
+  const term_id = req.params.term_id;
+  const user_mail = req.user_mail;
+
+  if (!term_id || !user_mail) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Missing required fields" });
+  }
+
+  const query = `
+    SELECT COUNT(*) AS isBookmarked
+    FROM muscle_english_bookmarks
+    WHERE bookmark_by = ? AND term_id = ?
+  `;
+  db.query(query, [user_mail, term_id], (err, results) => {
+    if (err) {
+      console.error("Error checking Muscle English bookmark state:", err);
+      return res
+        .status(500)
+        .json({ success: false, message: "Internal server error" });
+    }
+
+    const isBookmarked = results[0].isBookmarked > 0;
+    res.json({
+      success: true,
+      isBookmarked: isBookmarked,
+      message: isBookmarked
+        ? "Muscle English term is bookmarked"
+        : "Muscle English term is not bookmarked",
+    });
+  });
+};

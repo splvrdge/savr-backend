@@ -236,3 +236,30 @@ exports.getUrinaryTermDetails = (req, res) => {
     }
   });
 };
+
+exports.getMuscleEnglishTerms = (req, res) => {
+  const query = "SELECT term, id FROM muscle_english ORDER BY term";
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error("Error fetching Muscular System English Terms:", err);
+      return res
+        .status(500)
+        .json({ success: false, message: "Internal server error" });
+    }
+    res.json({ success: true, terms: results });
+  });
+};
+
+exports.getMuscleEnglishTermDetails = (req, res) => {
+  const id = req.params.id;
+  const query = `SELECT * FROM muscle_english WHERE id = ?`;
+
+  db.query(query, [id], (err, results) => {
+    if (err) {
+      console.error("Error fetching term details:", err);
+      res.status(500).send("Error fetching term details");
+    } else {
+      res.json(results[0]);
+    }
+  });
+};
