@@ -978,7 +978,7 @@ exports.isUrinarySystemBookmarked = (req, res) => {
 // Muscular System English
 
 // Add a MuscleEnglish bookmark
-exports.addUMuscleEnglishBookmark = (req, res) => {
+exports.addMuscleEnglishBookmark = (req, res) => {
   const { term_id } = req.body;
   const user_mail = req.user_mail;
 
