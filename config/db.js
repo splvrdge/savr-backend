@@ -12,7 +12,7 @@ const pool = mysql.createPool({
     ca: fs.readFileSync("./certs/ca.pem"),
   },
   waitForConnections: true,
-  connectionLimit: 20,
+  connectionLimit: 5,
   queueLimit: 0,
 });
 
