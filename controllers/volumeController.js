@@ -263,3 +263,138 @@ exports.getMuscleEnglishTermDetails = (req, res) => {
     }
   });
 };
+
+exports.getDigestiveTerms = (req, res) => {
+  const query = "SELECT term, id FROM digestive_system ORDER BY term";
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error("Error fetching Digestive Terms:", err);
+      return res
+        .status(500)
+        .json({ success: false, message: "Internal server error" });
+    }
+    res.json({ success: true, terms: results });
+  });
+};
+
+exports.getImmuneTerms = (req, res) => {
+  const query = "SELECT term, id FROM immune_system ORDER BY term";
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error("Error fetching Immune Terms:", err);
+      return res
+        .status(500)
+        .json({ success: false, message: "Internal server error" });
+    }
+    res.json({ success: true, terms: results });
+  });
+};
+
+exports.getJointTerms = (req, res) => {
+  const query = "SELECT term, id FROM joint_system ORDER BY term";
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error("Error fetching Joint Terms:", err);
+      return res
+        .status(500)
+        .json({ success: false, message: "Internal server error" });
+    }
+    res.json({ success: true, terms: results });
+  });
+};
+
+exports.getMuscularTerms = (req, res) => {
+  const query = "SELECT term, id FROM muscular_system ORDER BY term";
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error("Error fetching Muscular Terms:", err);
+      return res
+        .status(500)
+        .json({ success: false, message: "Internal server error" });
+    }
+    res.json({ success: true, terms: results });
+  });
+};
+
+exports.getPlaneTerms = (req, res) => {
+  const query = "SELECT term, id FROM plane_system ORDER BY term";
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error("Error fetching Plane Terms:", err);
+      return res
+        .status(500)
+        .json({ success: false, message: "Internal server error" });
+    }
+    res.json({ success: true, terms: results });
+  });
+};
+
+exports.getDigestiveTermDetails = (req, res) => {
+  const id = req.params.id;
+  const query = `SELECT * FROM digestive_system WHERE id = ?`;
+
+  db.query(query, [id], (err, results) => {
+    if (err) {
+      console.error("Error fetching Digestive term details:", err);
+      res.status(500).send("Error fetching term details");
+    } else {
+      res.json(results[0]);
+    }
+  });
+};
+
+exports.getImmuneTermDetails = (req, res) => {
+  const id = req.params.id;
+  const query = `SELECT * FROM immune_system WHERE id = ?`;
+
+  db.query(query, [id], (err, results) => {
+    if (err) {
+      console.error("Error fetching Immune term details:", err);
+      res.status(500).send("Error fetching term details");
+    } else {
+      res.json(results[0]);
+    }
+  });
+};
+
+exports.getJointTermDetails = (req, res) => {
+  const id = req.params.id;
+  const query = `SELECT * FROM joint_system WHERE id = ?`;
+
+  db.query(query, [id], (err, results) => {
+    if (err) {
+      console.error("Error fetching Joint term details:", err);
+      res.status(500).send("Error fetching term details");
+    } else {
+      res.json(results[0]);
+    }
+  });
+};
+
+exports.getMuscularTermDetails = (req, res) => {
+  const id = req.params.id;
+  const query = `SELECT * FROM muscular_system WHERE id = ?`;
+
+  db.query(query, [id], (err, results) => {
+    if (err) {
+      console.error("Error fetching Muscular term details:", err);
+      res.status(500).send("Error fetching term details");
+    } else {
+      res.json(results[0]);
+    }
+  });
+};
+
+exports.getPlaneTermDetails = (req, res) => {
+  const id = req.params.id;
+  const query = `SELECT * FROM plane_system WHERE id = ?`;
+
+  db.query(query, [id], (err, results) => {
+    if (err) {
+      console.error("Error fetching Plane term details:", err);
+      res.status(500).send("Error fetching term details");
+    } else {
+      res.json(results[0]);
+    }
+  });
+};

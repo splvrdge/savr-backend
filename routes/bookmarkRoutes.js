@@ -202,4 +202,114 @@ router.get(
   bookmarkController.isMuscleEnglishBookmarked
 );
 
+// Digestive System Bookmarks
+router.post(
+  "/digestive-system/add",
+  authMiddleware.verifyToken,
+  bookmarkController.addDigestiveSystemBookmark
+);
+router.post(
+  "/digestive-system/remove",
+  authMiddleware.verifyToken,
+  bookmarkController.removeDigestiveSystemBookmark
+);
+router.get(
+  "/digestive-system",
+  authMiddleware.verifyToken,
+  bookmarkController.getDigestiveSystemBookmarks
+);
+router.get(
+  "/digestive-system/:term_id",
+  authMiddleware.verifyToken,
+  bookmarkController.isDigestiveSystemBookmarked
+);
+
+// Immune System Bookmarks
+router.post(
+  "/immune-system/add",
+  authMiddleware.verifyToken,
+  bookmarkController.addImmuneSystemBookmark
+);
+router.post(
+  "/immune-system/remove",
+  authMiddleware.verifyToken,
+  bookmarkController.removeImmuneSystemBookmark
+);
+router.get(
+  "/immune-system",
+  authMiddleware.verifyToken,
+  bookmarkController.getImmuneSystemBookmarks
+);
+router.get(
+  "/immune-system/:term_id",
+  authMiddleware.verifyToken,
+  bookmarkController.isImmuneSystemBookmarked
+);
+
+// Joint System Bookmarks
+router.post(
+  "/joint-and-directional-terms/add",
+  authMiddleware.verifyToken,
+  bookmarkController.addJointSystemBookmark
+);
+router.post(
+  "/joint-and-directional-terms/remove",
+  authMiddleware.verifyToken,
+  bookmarkController.removeJointSystemBookmark
+);
+router.get(
+  "/joint-and-directional-terms",
+  authMiddleware.verifyToken,
+  bookmarkController.getJointSystemBookmarks
+);
+router.get(
+  "/joint-and-directional-terms/:term_id",
+  authMiddleware.verifyToken,
+  bookmarkController.isJointSystemBookmarked
+);
+
+// Muscular System Bookmarks
+router.post(
+  "/muscular-system-physiology/add",
+  authMiddleware.verifyToken,
+  bookmarkController.addMuscularSystemBookmark
+);
+router.post(
+  "/muscular-system-physiology/remove",
+  authMiddleware.verifyToken,
+  bookmarkController.removeMuscularSystemBookmark
+);
+router.get(
+  "/muscular-system-physiology",
+  authMiddleware.verifyToken,
+  bookmarkController.getMuscularSystemBookmarks
+);
+router.get(
+  "/muscular-system-physiology/:term_id",
+  authMiddleware.verifyToken,
+  bookmarkController.isMuscularSystemBookmarked
+);
+
+// Plane System Bookmarks
+router.post(
+  "/plane-and-directional-terms/add",
+  authMiddleware.verifyToken,
+  bookmarkController.addPlaneSystemBookmark
+);
+router.post(
+  "/plane-and-directional-terms/remove",
+  authMiddleware.verifyToken,
+  bookmarkController.removePlaneSystemBookmark
+);
+router.get(
+  "/plane-and-directional-terms",
+  authMiddleware.verifyToken,
+  bookmarkController.getPlaneSystemBookmarks
+);
+router.get(
+  "/plane-and-directional-terms/:term_id",
+  authMiddleware.verifyToken,
+  bookmarkController.isPlaneSystemBookmarked
+);
+
 module.exports = router;

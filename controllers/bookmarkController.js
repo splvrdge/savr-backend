@@ -1096,3 +1096,603 @@ exports.isMuscleEnglishBookmarked = (req, res) => {
     });
   });
 };
+
+// Add a digestive-system bookmark
+exports.addDigestiveSystemBookmark = (req, res) => {
+  const { term_id } = req.body;
+  const user_mail = req.user_mail;
+
+  if (!term_id || !user_mail) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Missing required fields" });
+  }
+
+  const query = `INSERT INTO digestive_system_bookmarks (bookmark_by, term_id) VALUES (?, ?)`;
+  db.query(query, [user_mail, term_id], (err) => {
+    if (err) {
+      if (err.code === "ER_DUP_ENTRY") {
+        return res
+          .status(409)
+          .json({ success: false, message: "Bookmark already exists" });
+      }
+      console.error("Error adding digestive-system bookmark:", err);
+      return res
+        .status(500)
+        .json({ success: false, message: "Internal server error" });
+    }
+    res.json({
+      success: true,
+      message: "Digestive-system bookmark added successfully",
+    });
+  });
+};
+
+// Remove a digestive-system bookmark
+exports.removeDigestiveSystemBookmark = (req, res) => {
+  const { term_id } = req.body;
+  const user_mail = req.user_mail;
+
+  if (!term_id || !user_mail) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Missing required fields" });
+  }
+
+  const query = `DELETE FROM digestive_system_bookmarks WHERE bookmark_by = ? AND term_id = ?`;
+  db.query(query, [user_mail, term_id], (err) => {
+    if (err) {
+      console.error("Error removing digestive-system bookmark:", err);
+      return res
+        .status(500)
+        .json({ success: false, message: "Internal server error" });
+    }
+    res.json({
+      success: true,
+      message: "Digestive-system bookmark removed successfully",
+    });
+  });
+};
+
+// Display all digestive-system bookmarks for the current user
+exports.getDigestiveSystemBookmarks = (req, res) => {
+  const user_mail = req.user_mail;
+
+  if (!user_mail) {
+    return res
+      .status(400)
+      .json({ success: false, message: "User not authenticated" });
+  }
+
+  const query = `
+    SELECT c.term, c.id
+    FROM digestive_system_bookmarks b
+    JOIN digestive_system c ON b.term_id = c.id
+    WHERE b.bookmark_by = ?
+    ORDER BY c.term 
+  `;
+  db.query(query, [user_mail], (err, results) => {
+    if (err) {
+      console.error("Error fetching digestive-system bookmarks:", err);
+      return res
+        .status(500)
+        .json({ success: false, message: "Internal server error" });
+    }
+    res.json({ success: true, bookmarks: results });
+  });
+};
+
+// Check if a digestive-system term is bookmarked by the current user
+exports.isDigestiveSystemBookmarked = (req, res) => {
+  const term_id = req.params.term_id;
+  const user_mail = req.user_mail;
+
+  if (!term_id || !user_mail) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Missing required fields" });
+  }
+
+  const query = `
+    SELECT COUNT(*) AS isBookmarked
+    FROM digestive_system_bookmarks
+    WHERE bookmark_by = ? AND term_id = ?
+  `;
+  db.query(query, [user_mail, term_id], (err, results) => {
+    if (err) {
+      console.error("Error checking digestive-system bookmark state:", err);
+      return res
+        .status(500)
+        .json({ success: false, message: "Internal server error" });
+    }
+
+    const isBookmarked = results[0].isBookmarked > 0;
+    res.json({
+      success: true,
+      isBookmarked: isBookmarked,
+      message: isBookmarked
+        ? "Digestive-system term is bookmarked"
+        : "Digestive-system term is not bookmarked",
+    });
+  });
+};
+
+// Add an immune-system bookmark
+exports.addImmuneSystemBookmark = (req, res) => {
+  const { term_id } = req.body;
+  const user_mail = req.user_mail;
+
+  if (!term_id || !user_mail) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Missing required fields" });
+  }
+
+  const query = `INSERT INTO immune_system_bookmarks (bookmark_by, term_id) VALUES (?, ?)`;
+  db.query(query, [user_mail, term_id], (err) => {
+    if (err) {
+      if (err.code === "ER_DUP_ENTRY") {
+        return res
+          .status(409)
+          .json({ success: false, message: "Bookmark already exists" });
+      }
+      console.error("Error adding immune-system bookmark:", err);
+      return res
+        .status(500)
+        .json({ success: false, message: "Internal server error" });
+    }
+    res.json({
+      success: true,
+      message: "Immune-system bookmark added successfully",
+    });
+  });
+};
+
+// Remove an immune-system bookmark
+exports.removeImmuneSystemBookmark = (req, res) => {
+  const { term_id } = req.body;
+  const user_mail = req.user_mail;
+
+  if (!term_id || !user_mail) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Missing required fields" });
+  }
+
+  const query = `DELETE FROM immune_system_bookmarks WHERE bookmark_by = ? AND term_id = ?`;
+  db.query(query, [user_mail, term_id], (err) => {
+    if (err) {
+      console.error("Error removing immune-system bookmark:", err);
+      return res
+        .status(500)
+        .json({ success: false, message: "Internal server error" });
+    }
+    res.json({
+      success: true,
+      message: "Immune-system bookmark removed successfully",
+    });
+  });
+};
+
+// Display all immune-system bookmarks for the current user
+exports.getImmuneSystemBookmarks = (req, res) => {
+  const user_mail = req.user_mail;
+
+  if (!user_mail) {
+    return res
+      .status(400)
+      .json({ success: false, message: "User not authenticated" });
+  }
+
+  const query = `
+    SELECT c.term, c.id
+    FROM immune_system_bookmarks b
+    JOIN immune_system c ON b.term_id = c.id
+    WHERE b.bookmark_by = ?
+    ORDER BY c.term 
+  `;
+  db.query(query, [user_mail], (err, results) => {
+    if (err) {
+      console.error("Error fetching immune-system bookmarks:", err);
+      return res
+        .status(500)
+        .json({ success: false, message: "Internal server error" });
+    }
+    res.json({ success: true, bookmarks: results });
+  });
+};
+
+// Check if an immune-system term is bookmarked by the current user
+exports.isImmuneSystemBookmarked = (req, res) => {
+  const term_id = req.params.term_id;
+  const user_mail = req.user_mail;
+
+  if (!term_id || !user_mail) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Missing required fields" });
+  }
+
+  const query = `
+    SELECT COUNT(*) AS isBookmarked
+    FROM immune_system_bookmarks
+    WHERE bookmark_by = ? AND term_id = ?
+  `;
+  db.query(query, [user_mail, term_id], (err, results) => {
+    if (err) {
+      console.error("Error checking immune-system bookmark state:", err);
+      return res
+        .status(500)
+        .json({ success: false, message: "Internal server error" });
+    }
+
+    const isBookmarked = results[0].isBookmarked > 0;
+    res.json({
+      success: true,
+      isBookmarked: isBookmarked,
+      message: isBookmarked
+        ? "Immune-system term is bookmarked"
+        : "Immune-system term is not bookmarked",
+    });
+  });
+};
+
+// Add a joint-system bookmark
+exports.addJointSystemBookmark = (req, res) => {
+  const { term_id } = req.body;
+  const user_mail = req.user_mail;
+
+  if (!term_id || !user_mail) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Missing required fields" });
+  }
+
+  const query = `INSERT INTO joint_system_bookmarks (bookmark_by, term_id) VALUES (?, ?)`;
+  db.query(query, [user_mail, term_id], (err) => {
+    if (err) {
+      if (err.code === "ER_DUP_ENTRY") {
+        return res
+          .status(409)
+          .json({ success: false, message: "Bookmark already exists" });
+      }
+      console.error("Error adding joint-system bookmark:", err);
+      return res
+        .status(500)
+        .json({ success: false, message: "Internal server error" });
+    }
+    res.json({
+      success: true,
+      message: "Joint-system bookmark added successfully",
+    });
+  });
+};
+
+// Remove a joint-system bookmark
+exports.removeJointSystemBookmark = (req, res) => {
+  const { term_id } = req.body;
+  const user_mail = req.user_mail;
+
+  if (!term_id || !user_mail) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Missing required fields" });
+  }
+
+  const query = `DELETE FROM joint_system_bookmarks WHERE bookmark_by = ? AND term_id = ?`;
+  db.query(query, [user_mail, term_id], (err) => {
+    if (err) {
+      console.error("Error removing joint-system bookmark:", err);
+      return res
+        .status(500)
+        .json({ success: false, message: "Internal server error" });
+    }
+    res.json({
+      success: true,
+      message: "Joint-system bookmark removed successfully",
+    });
+  });
+};
+
+// Display all joint-system bookmarks for the current user
+exports.getJointSystemBookmarks = (req, res) => {
+  const user_mail = req.user_mail;
+
+  if (!user_mail) {
+    return res
+      .status(400)
+      .json({ success: false, message: "User not authenticated" });
+  }
+
+  const query = `
+    SELECT c.term, c.id
+    FROM joint_system_bookmarks b
+    JOIN joint_system c ON b.term_id = c.id
+    WHERE b.bookmark_by = ?
+    ORDER BY c.term 
+  `;
+  db.query(query, [user_mail], (err, results) => {
+    if (err) {
+      console.error("Error fetching joint-system bookmarks:", err);
+      return res
+        .status(500)
+        .json({ success: false, message: "Internal server error" });
+    }
+    res.json({ success: true, bookmarks: results });
+  });
+};
+
+// Check if a joint-system term is bookmarked by the current user
+exports.isJointSystemBookmarked = (req, res) => {
+  const term_id = req.params.term_id;
+  const user_mail = req.user_mail;
+
+  if (!term_id || !user_mail) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Missing required fields" });
+  }
+
+  const query = `
+    SELECT COUNT(*) AS isBookmarked
+    FROM joint_system_bookmarks
+    WHERE bookmark_by = ? AND term_id = ?
+  `;
+  db.query(query, [user_mail, term_id], (err, results) => {
+    if (err) {
+      console.error("Error checking joint-system bookmark state:", err);
+      return res
+        .status(500)
+        .json({ success: false, message: "Internal server error" });
+    }
+
+    const isBookmarked = results[0].isBookmarked > 0;
+    res.json({
+      success: true,
+      isBookmarked: isBookmarked,
+      message: isBookmarked
+        ? "Joint-system term is bookmarked"
+        : "Joint-system term is not bookmarked",
+    });
+  });
+};
+
+// Add a muscular-system bookmark
+exports.addMuscularSystemBookmark = (req, res) => {
+  const { term_id } = req.body;
+  const user_mail = req.user_mail;
+
+  if (!term_id || !user_mail) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Missing required fields" });
+  }
+
+  const query = `INSERT INTO muscular_system_bookmarks (bookmark_by, term_id) VALUES (?, ?)`;
+  db.query(query, [user_mail, term_id], (err) => {
+    if (err) {
+      if (err.code === "ER_DUP_ENTRY") {
+        return res
+          .status(409)
+          .json({ success: false, message: "Bookmark already exists" });
+      }
+      console.error("Error adding muscular-system bookmark:", err);
+      return res
+        .status(500)
+        .json({ success: false, message: "Internal server error" });
+    }
+    res.json({
+      success: true,
+      message: "Muscular-system bookmark added successfully",
+    });
+  });
+};
+
+// Remove a muscular-system bookmark
+exports.removeMuscularSystemBookmark = (req, res) => {
+  const { term_id } = req.body;
+  const user_mail = req.user_mail;
+
+  if (!term_id || !user_mail) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Missing required fields" });
+  }
+
+  const query = `DELETE FROM muscular_system_bookmarks WHERE bookmark_by = ? AND term_id = ?`;
+  db.query(query, [user_mail, term_id], (err) => {
+    if (err) {
+      console.error("Error removing muscular-system bookmark:", err);
+      return res
+        .status(500)
+        .json({ success: false, message: "Internal server error" });
+    }
+    res.json({
+      success: true,
+      message: "Muscular-system bookmark removed successfully",
+    });
+  });
+};
+
+// Display all muscular-system bookmarks for the current user
+exports.getMuscularSystemBookmarks = (req, res) => {
+  const user_mail = req.user_mail;
+
+  if (!user_mail) {
+    return res
+      .status(400)
+      .json({ success: false, message: "User not authenticated" });
+  }
+
+  const query = `
+    SELECT c.term, c.id
+    FROM muscular_system_bookmarks b
+    JOIN muscular_system c ON b.term_id = c.id
+    WHERE b.bookmark_by = ?
+    ORDER BY c.term 
+  `;
+  db.query(query, [user_mail], (err, results) => {
+    if (err) {
+      console.error("Error fetching muscular-system bookmarks:", err);
+      return res
+        .status(500)
+        .json({ success: false, message: "Internal server error" });
+    }
+    res.json({ success: true, bookmarks: results });
+  });
+};
+
+// Check if a muscular-system term is bookmarked by the current user
+exports.isMuscularSystemBookmarked = (req, res) => {
+  const term_id = req.params.term_id;
+  const user_mail = req.user_mail;
+
+  if (!term_id || !user_mail) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Missing required fields" });
+  }
+
+  const query = `
+    SELECT COUNT(*) AS isBookmarked
+    FROM muscular_system_bookmarks
+    WHERE bookmark_by = ? AND term_id = ?
+  `;
+  db.query(query, [user_mail, term_id], (err, results) => {
+    if (err) {
+      console.error("Error checking muscular-system bookmark state:", err);
+      return res
+        .status(500)
+        .json({ success: false, message: "Internal server error" });
+    }
+
+    const isBookmarked = results[0].isBookmarked > 0;
+    res.json({
+      success: true,
+      isBookmarked: isBookmarked,
+      message: isBookmarked
+        ? "Muscular-system term is bookmarked"
+        : "Muscular-system term is not bookmarked",
+    });
+  });
+};
+
+// Add a plane-system bookmark
+exports.addPlaneSystemBookmark = (req, res) => {
+  const { term_id } = req.body;
+  const user_mail = req.user_mail;
+
+  if (!term_id || !user_mail) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Missing required fields" });
+  }
+
+  const query = `INSERT INTO plane_system_bookmarks (bookmark_by, term_id) VALUES (?, ?)`;
+  db.query(query, [user_mail, term_id], (err) => {
+    if (err) {
+      if (err.code === "ER_DUP_ENTRY") {
+        return res
+          .status(409)
+          .json({ success: false, message: "Bookmark already exists" });
+      }
+      console.error("Error adding plane-system bookmark:", err);
+      return res
+        .status(500)
+        .json({ success: false, message: "Internal server error" });
+    }
+    res.json({
+      success: true,
+      message: "Plane-system bookmark added successfully",
+    });
+  });
+};
+
+// Remove a plane-system bookmark
+exports.removePlaneSystemBookmark = (req, res) => {
+  const { term_id } = req.body;
+  const user_mail = req.user_mail;
+
+  if (!term_id || !user_mail) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Missing required fields" });
+  }
+
+  const query = `DELETE FROM plane_system_bookmarks WHERE bookmark_by = ? AND term_id = ?`;
+  db.query(query, [user_mail, term_id], (err) => {
+    if (err) {
+      console.error("Error removing plane-system bookmark:", err);
+      return res
+        .status(500)
+        .json({ success: false, message: "Internal server error" });
+    }
+    res.json({
+      success: true,
+      message: "Plane-system bookmark removed successfully",
+    });
+  });
+};
+
+// Display all plane-system bookmarks for the current user
+exports.getPlaneSystemBookmarks = (req, res) => {
+  const user_mail = req.user_mail;
+
+  if (!user_mail) {
+    return res
+      .status(400)
+      .json({ success: false, message: "User not authenticated" });
+  }
+
+  const query = `
+    SELECT c.term, c.id
+    FROM plane_system_bookmarks b
+    JOIN plane_system c ON b.term_id = c.id
+    WHERE b.bookmark_by = ?
+    ORDER BY c.term 
+  `;
+  db.query(query, [user_mail], (err, results) => {
+    if (err) {
+      console.error("Error fetching plane-system bookmarks:", err);
+      return res
+        .status(500)
+        .json({ success: false, message: "Internal server error" });
+    }
+    res.json({ success: true, bookmarks: results });
+  });
+};
+
+// Check if a plane-system term is bookmarked by the current user
+exports.isPlaneSystemBookmarked = (req, res) => {
+  const term_id = req.params.term_id;
+  const user_mail = req.user_mail;
+
+  if (!term_id || !user_mail) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Missing required fields" });
+  }
+
+  const query = `
+    SELECT COUNT(*) AS isBookmarked
+    FROM plane_system_bookmarks
+    WHERE bookmark_by = ? AND term_id = ?
+  `;
+  db.query(query, [user_mail, term_id], (err, results) => {
+    if (err) {
+      console.error("Error checking plane-system bookmark state:", err);
+      return res
+        .status(500)
+        .json({ success: false, message: "Internal server error" });
+    }
+
+    const isBookmarked = results[0].isBookmarked > 0;
+    res.json({
+      success: true,
+      isBookmarked: isBookmarked,
+      message: isBookmarked
+        ? "Plane-system term is bookmarked"
+        : "Plane-system term is not bookmarked",
+    });
+  });
+};
