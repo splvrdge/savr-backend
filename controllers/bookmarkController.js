@@ -1339,7 +1339,6 @@ exports.addJointSystemBookmark = async (req, res) => {
       .json({ success: false, message: "Internal server error" });
   }
 };
-const db = require("../config/db");
 
 // Remove a joint-system bookmark
 exports.removeJointSystemBookmark = async (req, res) => {
