@@ -1,7 +1,7 @@
 const db = require("../config/db");
 
 // Add a sample-term bookmark
-exports.addSampleTermBookmark = (req, res) => {
+exports.addSampleTermBookmark = async (req, res) => {
   const { term_id } = req.body;
   const user_mail = req.user_mail;
 
@@ -12,27 +12,27 @@ exports.addSampleTermBookmark = (req, res) => {
   }
 
   const query = `INSERT INTO sample_term_bookmarks (bookmark_by, term_id) VALUES (?, ?)`;
-  db.query(query, [user_mail, term_id], (err) => {
-    if (err) {
-      if (err.code === "ER_DUP_ENTRY") {
-        return res
-          .status(409)
-          .json({ success: false, message: "Bookmark already exists" });
-      }
-      console.error("Error adding sample-term bookmark:", err);
-      return res
-        .status(500)
-        .json({ success: false, message: "Internal server error" });
-    }
+  try {
+    await db.execute(query, [user_mail, term_id]);
     res.json({
       success: true,
       message: "Sample-term bookmark added successfully",
     });
-  });
+  } catch (err) {
+    if (err.code === "ER_DUP_ENTRY") {
+      return res
+        .status(409)
+        .json({ success: false, message: "Bookmark already exists" });
+    }
+    console.error("Error adding sample-term bookmark:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
 };
 
 // Remove a sample-term bookmark
-exports.removeSampleTermBookmark = (req, res) => {
+exports.removeSampleTermBookmark = async (req, res) => {
   const { term_id } = req.body;
   const user_mail = req.user_mail;
 
@@ -43,22 +43,22 @@ exports.removeSampleTermBookmark = (req, res) => {
   }
 
   const query = `DELETE FROM sample_term_bookmarks WHERE bookmark_by = ? AND term_id = ?`;
-  db.query(query, [user_mail, term_id], (err) => {
-    if (err) {
-      console.error("Error removing sample-term bookmark:", err);
-      return res
-        .status(500)
-        .json({ success: false, message: "Internal server error" });
-    }
+  try {
+    await db.execute(query, [user_mail, term_id]);
     res.json({
       success: true,
       message: "Sample-term bookmark removed successfully",
     });
-  });
+  } catch (err) {
+    console.error("Error removing sample-term bookmark:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
 };
 
 // Display all sample-term bookmarks for the current user
-exports.getSampleTermBookmarks = (req, res) => {
+exports.getSampleTermBookmarks = async (req, res) => {
   const user_mail = req.user_mail;
 
   if (!user_mail) {
@@ -74,19 +74,19 @@ exports.getSampleTermBookmarks = (req, res) => {
     WHERE b.bookmark_by = ?
     ORDER BY c.term 
   `;
-  db.query(query, [user_mail], (err, results) => {
-    if (err) {
-      console.error("Error fetching sample-term bookmarks:", err);
-      return res
-        .status(500)
-        .json({ success: false, message: "Internal server error" });
-    }
+  try {
+    const [results] = await db.execute(query, [user_mail]);
     res.json({ success: true, bookmarks: results });
-  });
+  } catch (err) {
+    console.error("Error fetching sample-term bookmarks:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
 };
 
 // Check if a sample-term is bookmarked by the current user
-exports.isSampleTermBookmarked = (req, res) => {
+exports.isSampleTermBookmarked = async (req, res) => {
   const term_id = req.params.term_id;
   const user_mail = req.user_mail;
 
@@ -101,14 +101,8 @@ exports.isSampleTermBookmarked = (req, res) => {
     FROM sample_term_bookmarks
     WHERE bookmark_by = ? AND term_id = ?
   `;
-  db.query(query, [user_mail, term_id], (err, results) => {
-    if (err) {
-      console.error("Error checking sample-term bookmark state:", err);
-      return res
-        .status(500)
-        .json({ success: false, message: "Internal server error" });
-    }
-
+  try {
+    const [results] = await db.execute(query, [user_mail, term_id]);
     const isBookmarked = results[0].isBookmarked > 0;
     res.json({
       success: true,
@@ -117,11 +111,15 @@ exports.isSampleTermBookmarked = (req, res) => {
         ? "Sample-term is bookmarked"
         : "Sample-term is not bookmarked",
     });
-  });
+  } catch (err) {
+    console.error("Error checking sample-term bookmark state:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
 };
-
 // Add a skeletal-system bookmark
-exports.addSkeletalSystemBookmark = (req, res) => {
+exports.addSkeletalSystemBookmark = async (req, res) => {
   const { term_id } = req.body;
   const user_mail = req.user_mail;
 
@@ -132,27 +130,27 @@ exports.addSkeletalSystemBookmark = (req, res) => {
   }
 
   const query = `INSERT INTO skeletal_system_bookmarks (bookmark_by, term_id) VALUES (?, ?)`;
-  db.query(query, [user_mail, term_id], (err) => {
-    if (err) {
-      if (err.code === "ER_DUP_ENTRY") {
-        return res
-          .status(409)
-          .json({ success: false, message: "Bookmark already exists" });
-      }
-      console.error("Error adding skeletal-system bookmark:", err);
-      return res
-        .status(500)
-        .json({ success: false, message: "Internal server error" });
-    }
+  try {
+    await db.execute(query, [user_mail, term_id]);
     res.json({
       success: true,
       message: "Skeletal-system bookmark added successfully",
     });
-  });
+  } catch (err) {
+    if (err.code === "ER_DUP_ENTRY") {
+      return res
+        .status(409)
+        .json({ success: false, message: "Bookmark already exists" });
+    }
+    console.error("Error adding skeletal-system bookmark:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
 };
 
 // Remove a skeletal-system bookmark
-exports.removeSkeletalSystemBookmark = (req, res) => {
+exports.removeSkeletalSystemBookmark = async (req, res) => {
   const { term_id } = req.body;
   const user_mail = req.user_mail;
 
@@ -163,22 +161,22 @@ exports.removeSkeletalSystemBookmark = (req, res) => {
   }
 
   const query = `DELETE FROM skeletal_system_bookmarks WHERE bookmark_by = ? AND term_id = ?`;
-  db.query(query, [user_mail, term_id], (err) => {
-    if (err) {
-      console.error("Error removing skeletal-system bookmark:", err);
-      return res
-        .status(500)
-        .json({ success: false, message: "Internal server error" });
-    }
+  try {
+    await db.execute(query, [user_mail, term_id]);
     res.json({
       success: true,
       message: "Skeletal-system bookmark removed successfully",
     });
-  });
+  } catch (err) {
+    console.error("Error removing skeletal-system bookmark:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
 };
 
 // Display all skeletal-system bookmarks for the current user
-exports.getSkeletalSystemBookmarks = (req, res) => {
+exports.getSkeletalSystemBookmarks = async (req, res) => {
   const user_mail = req.user_mail;
 
   if (!user_mail) {
@@ -194,19 +192,19 @@ exports.getSkeletalSystemBookmarks = (req, res) => {
     WHERE b.bookmark_by = ?
     ORDER BY c.term 
   `;
-  db.query(query, [user_mail], (err, results) => {
-    if (err) {
-      console.error("Error fetching skeletal-system bookmarks:", err);
-      return res
-        .status(500)
-        .json({ success: false, message: "Internal server error" });
-    }
+  try {
+    const [results] = await db.execute(query, [user_mail]);
     res.json({ success: true, bookmarks: results });
-  });
+  } catch (err) {
+    console.error("Error fetching skeletal-system bookmarks:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
 };
 
 // Check if a skeletal-system term is bookmarked by the current user
-exports.isSkeletalSystemBookmarked = (req, res) => {
+exports.isSkeletalSystemBookmarked = async (req, res) => {
   const term_id = req.params.term_id;
   const user_mail = req.user_mail;
 
@@ -221,14 +219,8 @@ exports.isSkeletalSystemBookmarked = (req, res) => {
     FROM skeletal_system_bookmarks
     WHERE bookmark_by = ? AND term_id = ?
   `;
-  db.query(query, [user_mail, term_id], (err, results) => {
-    if (err) {
-      console.error("Error checking skeletal-system bookmark state:", err);
-      return res
-        .status(500)
-        .json({ success: false, message: "Internal server error" });
-    }
-
+  try {
+    const [results] = await db.execute(query, [user_mail, term_id]);
     const isBookmarked = results[0].isBookmarked > 0;
     res.json({
       success: true,
@@ -237,13 +229,15 @@ exports.isSkeletalSystemBookmarked = (req, res) => {
         ? "Skeletal-system term is bookmarked"
         : "Skeletal-system term is not bookmarked",
     });
-  });
+  } catch (err) {
+    console.error("Error checking skeletal-system bookmark state:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
 };
-
-// Cardiovascular System
-
 // Add a cardiovascular-system bookmark
-exports.addCardiovascularSystemBookmark = (req, res) => {
+exports.addCardiovascularSystemBookmark = async (req, res) => {
   const { term_id } = req.body;
   const user_mail = req.user_mail;
 
@@ -254,27 +248,27 @@ exports.addCardiovascularSystemBookmark = (req, res) => {
   }
 
   const query = `INSERT INTO cardiovascular_system_bookmarks (bookmark_by, term_id) VALUES (?, ?)`;
-  db.query(query, [user_mail, term_id], (err) => {
-    if (err) {
-      if (err.code === "ER_DUP_ENTRY") {
-        return res
-          .status(409)
-          .json({ success: false, message: "Bookmark already exists" });
-      }
-      console.error("Error adding cardiovascular-system bookmark:", err);
-      return res
-        .status(500)
-        .json({ success: false, message: "Internal server error" });
-    }
+  try {
+    await db.execute(query, [user_mail, term_id]);
     res.json({
       success: true,
       message: "Cardiovascular-system bookmark added successfully",
     });
-  });
+  } catch (err) {
+    if (err.code === "ER_DUP_ENTRY") {
+      return res
+        .status(409)
+        .json({ success: false, message: "Bookmark already exists" });
+    }
+    console.error("Error adding cardiovascular-system bookmark:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
 };
 
 // Remove a cardiovascular-system bookmark
-exports.removeCardiovascularSystemBookmark = (req, res) => {
+exports.removeCardiovascularSystemBookmark = async (req, res) => {
   const { term_id } = req.body;
   const user_mail = req.user_mail;
 
@@ -285,22 +279,22 @@ exports.removeCardiovascularSystemBookmark = (req, res) => {
   }
 
   const query = `DELETE FROM cardiovascular_system_bookmarks WHERE bookmark_by = ? AND term_id = ?`;
-  db.query(query, [user_mail, term_id], (err) => {
-    if (err) {
-      console.error("Error removing cardiovascular-system bookmark:", err);
-      return res
-        .status(500)
-        .json({ success: false, message: "Internal server error" });
-    }
+  try {
+    await db.execute(query, [user_mail, term_id]);
     res.json({
       success: true,
       message: "Cardiovascular-system bookmark removed successfully",
     });
-  });
+  } catch (err) {
+    console.error("Error removing cardiovascular-system bookmark:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
 };
 
 // Display all cardiovascular-system bookmarks for the current user
-exports.getCardiovascularSystemBookmarks = (req, res) => {
+exports.getCardiovascularSystemBookmarks = async (req, res) => {
   const user_mail = req.user_mail;
 
   if (!user_mail) {
@@ -316,19 +310,19 @@ exports.getCardiovascularSystemBookmarks = (req, res) => {
     WHERE b.bookmark_by = ?
     ORDER BY c.term 
   `;
-  db.query(query, [user_mail], (err, results) => {
-    if (err) {
-      console.error("Error fetching cardiovascular-system bookmarks:", err);
-      return res
-        .status(500)
-        .json({ success: false, message: "Internal server error" });
-    }
+  try {
+    const [results] = await db.execute(query, [user_mail]);
     res.json({ success: true, bookmarks: results });
-  });
+  } catch (err) {
+    console.error("Error fetching cardiovascular-system bookmarks:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
 };
 
 // Check if a cardiovascular-system term is bookmarked by the current user
-exports.isCardiovascularSystemBookmarked = (req, res) => {
+exports.isCardiovascularSystemBookmarked = async (req, res) => {
   const term_id = req.params.term_id;
   const user_mail = req.user_mail;
 
@@ -343,17 +337,8 @@ exports.isCardiovascularSystemBookmarked = (req, res) => {
     FROM cardiovascular_system_bookmarks
     WHERE bookmark_by = ? AND term_id = ?
   `;
-  db.query(query, [user_mail, term_id], (err, results) => {
-    if (err) {
-      console.error(
-        "Error checking cardiovascular-system bookmark state:",
-        err
-      );
-      return res
-        .status(500)
-        .json({ success: false, message: "Internal server error" });
-    }
-
+  try {
+    const [results] = await db.execute(query, [user_mail, term_id]);
     const isBookmarked = results[0].isBookmarked > 0;
     res.json({
       success: true,
@@ -362,13 +347,16 @@ exports.isCardiovascularSystemBookmarked = (req, res) => {
         ? "Cardiovascular-system term is bookmarked"
         : "Cardiovascular-system term is not bookmarked",
     });
-  });
+  } catch (err) {
+    console.error("Error checking cardiovascular-system bookmark state:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
 };
 
-// Integumentary System
-
 // Add an integumentary-system bookmark
-exports.addIntegumentarySystemBookmark = (req, res) => {
+exports.addIntegumentarySystemBookmark = async (req, res) => {
   const { term_id } = req.body;
   const user_mail = req.user_mail;
 
@@ -379,27 +367,27 @@ exports.addIntegumentarySystemBookmark = (req, res) => {
   }
 
   const query = `INSERT INTO integumentary_system_bookmarks (bookmark_by, term_id) VALUES (?, ?)`;
-  db.query(query, [user_mail, term_id], (err) => {
-    if (err) {
-      if (err.code === "ER_DUP_ENTRY") {
-        return res
-          .status(409)
-          .json({ success: false, message: "Bookmark already exists" });
-      }
-      console.error("Error adding integumentary-system bookmark:", err);
-      return res
-        .status(500)
-        .json({ success: false, message: "Internal server error" });
-    }
+  try {
+    await db.execute(query, [user_mail, term_id]);
     res.json({
       success: true,
       message: "Integumentary-system bookmark added successfully",
     });
-  });
+  } catch (err) {
+    if (err.code === "ER_DUP_ENTRY") {
+      return res
+        .status(409)
+        .json({ success: false, message: "Bookmark already exists" });
+    }
+    console.error("Error adding integumentary-system bookmark:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
 };
 
 // Remove an integumentary-system bookmark
-exports.removeIntegumentarySystemBookmark = (req, res) => {
+exports.removeIntegumentarySystemBookmark = async (req, res) => {
   const { term_id } = req.body;
   const user_mail = req.user_mail;
 
@@ -410,22 +398,22 @@ exports.removeIntegumentarySystemBookmark = (req, res) => {
   }
 
   const query = `DELETE FROM integumentary_system_bookmarks WHERE bookmark_by = ? AND term_id = ?`;
-  db.query(query, [user_mail, term_id], (err) => {
-    if (err) {
-      console.error("Error removing integumentary-system bookmark:", err);
-      return res
-        .status(500)
-        .json({ success: false, message: "Internal server error" });
-    }
+  try {
+    await db.execute(query, [user_mail, term_id]);
     res.json({
       success: true,
       message: "Integumentary-system bookmark removed successfully",
     });
-  });
+  } catch (err) {
+    console.error("Error removing integumentary-system bookmark:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
 };
 
 // Display all integumentary-system bookmarks for the current user
-exports.getIntegumentarySystemBookmarks = (req, res) => {
+exports.getIntegumentarySystemBookmarks = async (req, res) => {
   const user_mail = req.user_mail;
 
   if (!user_mail) {
@@ -441,19 +429,19 @@ exports.getIntegumentarySystemBookmarks = (req, res) => {
     WHERE b.bookmark_by = ?
     ORDER BY c.term 
   `;
-  db.query(query, [user_mail], (err, results) => {
-    if (err) {
-      console.error("Error fetching integumentary-system bookmarks:", err);
-      return res
-        .status(500)
-        .json({ success: false, message: "Internal server error" });
-    }
+  try {
+    const [results] = await db.execute(query, [user_mail]);
     res.json({ success: true, bookmarks: results });
-  });
+  } catch (err) {
+    console.error("Error fetching integumentary-system bookmarks:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
 };
 
 // Check if an integumentary-system term is bookmarked by the current user
-exports.isIntegumentarySystemBookmarked = (req, res) => {
+exports.isIntegumentarySystemBookmarked = async (req, res) => {
   const term_id = req.params.term_id;
   const user_mail = req.user_mail;
 
@@ -468,14 +456,8 @@ exports.isIntegumentarySystemBookmarked = (req, res) => {
     FROM integumentary_system_bookmarks
     WHERE bookmark_by = ? AND term_id = ?
   `;
-  db.query(query, [user_mail, term_id], (err, results) => {
-    if (err) {
-      console.error("Error checking integumentary-system bookmark state:", err);
-      return res
-        .status(500)
-        .json({ success: false, message: "Internal server error" });
-    }
-
+  try {
+    const [results] = await db.execute(query, [user_mail, term_id]);
     const isBookmarked = results[0].isBookmarked > 0;
     res.json({
       success: true,
@@ -484,13 +466,15 @@ exports.isIntegumentarySystemBookmarked = (req, res) => {
         ? "Integumentary-system term is bookmarked"
         : "Integumentary-system term is not bookmarked",
     });
-  });
+  } catch (err) {
+    console.error("Error checking integumentary-system bookmark state:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
 };
-
-// Nervous System
-
 // Add a nervous-system bookmark
-exports.addNervousSystemBookmark = (req, res) => {
+exports.addNervousSystemBookmark = async (req, res) => {
   const { term_id } = req.body;
   const user_mail = req.user_mail;
 
@@ -501,27 +485,27 @@ exports.addNervousSystemBookmark = (req, res) => {
   }
 
   const query = `INSERT INTO nervous_system_bookmarks (bookmark_by, term_id) VALUES (?, ?)`;
-  db.query(query, [user_mail, term_id], (err) => {
-    if (err) {
-      if (err.code === "ER_DUP_ENTRY") {
-        return res
-          .status(409)
-          .json({ success: false, message: "Bookmark already exists" });
-      }
-      console.error("Error adding nervous-system bookmark:", err);
-      return res
-        .status(500)
-        .json({ success: false, message: "Internal server error" });
-    }
+  try {
+    await db.execute(query, [user_mail, term_id]);
     res.json({
       success: true,
       message: "Nervous-system bookmark added successfully",
     });
-  });
+  } catch (err) {
+    if (err.code === "ER_DUP_ENTRY") {
+      return res
+        .status(409)
+        .json({ success: false, message: "Bookmark already exists" });
+    }
+    console.error("Error adding nervous-system bookmark:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
 };
 
 // Remove a nervous-system bookmark
-exports.removeNervousSystemBookmark = (req, res) => {
+exports.removeNervousSystemBookmark = async (req, res) => {
   const { term_id } = req.body;
   const user_mail = req.user_mail;
 
@@ -532,22 +516,22 @@ exports.removeNervousSystemBookmark = (req, res) => {
   }
 
   const query = `DELETE FROM nervous_system_bookmarks WHERE bookmark_by = ? AND term_id = ?`;
-  db.query(query, [user_mail, term_id], (err) => {
-    if (err) {
-      console.error("Error removing nervous-system bookmark:", err);
-      return res
-        .status(500)
-        .json({ success: false, message: "Internal server error" });
-    }
+  try {
+    await db.execute(query, [user_mail, term_id]);
     res.json({
       success: true,
       message: "Nervous-system bookmark removed successfully",
     });
-  });
+  } catch (err) {
+    console.error("Error removing nervous-system bookmark:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
 };
 
 // Display all nervous-system bookmarks for the current user
-exports.getNervousSystemBookmarks = (req, res) => {
+exports.getNervousSystemBookmarks = async (req, res) => {
   const user_mail = req.user_mail;
 
   if (!user_mail) {
@@ -563,19 +547,19 @@ exports.getNervousSystemBookmarks = (req, res) => {
     WHERE b.bookmark_by = ?
     ORDER BY c.term 
   `;
-  db.query(query, [user_mail], (err, results) => {
-    if (err) {
-      console.error("Error fetching nervous-system bookmarks:", err);
-      return res
-        .status(500)
-        .json({ success: false, message: "Internal server error" });
-    }
+  try {
+    const [results] = await db.execute(query, [user_mail]);
     res.json({ success: true, bookmarks: results });
-  });
+  } catch (err) {
+    console.error("Error fetching nervous-system bookmarks:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
 };
 
 // Check if a nervous-system term is bookmarked by the current user
-exports.isNervousSystemBookmarked = (req, res) => {
+exports.isNervousSystemBookmarked = async (req, res) => {
   const term_id = req.params.term_id;
   const user_mail = req.user_mail;
 
@@ -590,14 +574,8 @@ exports.isNervousSystemBookmarked = (req, res) => {
     FROM nervous_system_bookmarks
     WHERE bookmark_by = ? AND term_id = ?
   `;
-  db.query(query, [user_mail, term_id], (err, results) => {
-    if (err) {
-      console.error("Error checking nervous-system bookmark state:", err);
-      return res
-        .status(500)
-        .json({ success: false, message: "Internal server error" });
-    }
-
+  try {
+    const [results] = await db.execute(query, [user_mail, term_id]);
     const isBookmarked = results[0].isBookmarked > 0;
     res.json({
       success: true,
@@ -606,13 +584,15 @@ exports.isNervousSystemBookmarked = (req, res) => {
         ? "Nervous-system term is bookmarked"
         : "Nervous-system term is not bookmarked",
     });
-  });
+  } catch (err) {
+    console.error("Error checking nervous-system bookmark state:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
 };
-
-// Reproductive System
-
 // Add a reproductive-system bookmark
-exports.addReproductiveSystemBookmark = (req, res) => {
+exports.addReproductiveSystemBookmark = async (req, res) => {
   const { term_id } = req.body;
   const user_mail = req.user_mail;
 
@@ -623,27 +603,27 @@ exports.addReproductiveSystemBookmark = (req, res) => {
   }
 
   const query = `INSERT INTO reproductive_system_bookmarks (bookmark_by, term_id) VALUES (?, ?)`;
-  db.query(query, [user_mail, term_id], (err) => {
-    if (err) {
-      if (err.code === "ER_DUP_ENTRY") {
-        return res
-          .status(409)
-          .json({ success: false, message: "Bookmark already exists" });
-      }
-      console.error("Error adding reproductive-system bookmark:", err);
-      return res
-        .status(500)
-        .json({ success: false, message: "Internal server error" });
-    }
+  try {
+    await db.execute(query, [user_mail, term_id]);
     res.json({
       success: true,
       message: "Reproductive-system bookmark added successfully",
     });
-  });
+  } catch (err) {
+    if (err.code === "ER_DUP_ENTRY") {
+      return res
+        .status(409)
+        .json({ success: false, message: "Bookmark already exists" });
+    }
+    console.error("Error adding reproductive-system bookmark:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
 };
 
 // Remove a reproductive-system bookmark
-exports.removeReproductiveSystemBookmark = (req, res) => {
+exports.removeReproductiveSystemBookmark = async (req, res) => {
   const { term_id } = req.body;
   const user_mail = req.user_mail;
 
@@ -654,22 +634,22 @@ exports.removeReproductiveSystemBookmark = (req, res) => {
   }
 
   const query = `DELETE FROM reproductive_system_bookmarks WHERE bookmark_by = ? AND term_id = ?`;
-  db.query(query, [user_mail, term_id], (err) => {
-    if (err) {
-      console.error("Error removing reproductive-system bookmark:", err);
-      return res
-        .status(500)
-        .json({ success: false, message: "Internal server error" });
-    }
+  try {
+    await db.execute(query, [user_mail, term_id]);
     res.json({
       success: true,
       message: "Reproductive-system bookmark removed successfully",
     });
-  });
+  } catch (err) {
+    console.error("Error removing reproductive-system bookmark:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
 };
 
 // Display all reproductive-system bookmarks for the current user
-exports.getReproductiveSystemBookmarks = (req, res) => {
+exports.getReproductiveSystemBookmarks = async (req, res) => {
   const user_mail = req.user_mail;
 
   if (!user_mail) {
@@ -685,19 +665,19 @@ exports.getReproductiveSystemBookmarks = (req, res) => {
     WHERE b.bookmark_by = ?
     ORDER BY c.term 
   `;
-  db.query(query, [user_mail], (err, results) => {
-    if (err) {
-      console.error("Error fetching reproductive-system bookmarks:", err);
-      return res
-        .status(500)
-        .json({ success: false, message: "Internal server error" });
-    }
+  try {
+    const [results] = await db.execute(query, [user_mail]);
     res.json({ success: true, bookmarks: results });
-  });
+  } catch (err) {
+    console.error("Error fetching reproductive-system bookmarks:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
 };
 
 // Check if a reproductive-system term is bookmarked by the current user
-exports.isReproductiveSystemBookmarked = (req, res) => {
+exports.isReproductiveSystemBookmarked = async (req, res) => {
   const term_id = req.params.term_id;
   const user_mail = req.user_mail;
 
@@ -712,14 +692,8 @@ exports.isReproductiveSystemBookmarked = (req, res) => {
     FROM reproductive_system_bookmarks
     WHERE bookmark_by = ? AND term_id = ?
   `;
-  db.query(query, [user_mail, term_id], (err, results) => {
-    if (err) {
-      console.error("Error checking reproductive-system bookmark state:", err);
-      return res
-        .status(500)
-        .json({ success: false, message: "Internal server error" });
-    }
-
+  try {
+    const [results] = await db.execute(query, [user_mail, term_id]);
     const isBookmarked = results[0].isBookmarked > 0;
     res.json({
       success: true,
@@ -728,13 +702,18 @@ exports.isReproductiveSystemBookmarked = (req, res) => {
         ? "Reproductive-system term is bookmarked"
         : "Reproductive-system term is not bookmarked",
     });
-  });
+  } catch (err) {
+    console.error("Error checking reproductive-system bookmark state:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
 };
 
 // Respiratory System
 
 // Add a respiratory-system bookmark
-exports.addRespiratorySystemBookmark = (req, res) => {
+exports.addRespiratorySystemBookmark = async (req, res) => {
   const { term_id } = req.body;
   const user_mail = req.user_mail;
 
@@ -745,27 +724,27 @@ exports.addRespiratorySystemBookmark = (req, res) => {
   }
 
   const query = `INSERT INTO respiratory_system_bookmarks (bookmark_by, term_id) VALUES (?, ?)`;
-  db.query(query, [user_mail, term_id], (err) => {
-    if (err) {
-      if (err.code === "ER_DUP_ENTRY") {
-        return res
-          .status(409)
-          .json({ success: false, message: "Bookmark already exists" });
-      }
-      console.error("Error adding respiratory-system bookmark:", err);
-      return res
-        .status(500)
-        .json({ success: false, message: "Internal server error" });
-    }
+  try {
+    await db.execute(query, [user_mail, term_id]);
     res.json({
       success: true,
       message: "Respiratory-system bookmark added successfully",
     });
-  });
+  } catch (err) {
+    if (err.code === "ER_DUP_ENTRY") {
+      return res
+        .status(409)
+        .json({ success: false, message: "Bookmark already exists" });
+    }
+    console.error("Error adding respiratory-system bookmark:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
 };
 
 // Remove a respiratory-system bookmark
-exports.removeRespiratorySystemBookmark = (req, res) => {
+exports.removeRespiratorySystemBookmark = async (req, res) => {
   const { term_id } = req.body;
   const user_mail = req.user_mail;
 
@@ -776,22 +755,22 @@ exports.removeRespiratorySystemBookmark = (req, res) => {
   }
 
   const query = `DELETE FROM respiratory_system_bookmarks WHERE bookmark_by = ? AND term_id = ?`;
-  db.query(query, [user_mail, term_id], (err) => {
-    if (err) {
-      console.error("Error removing respiratory-system bookmark:", err);
-      return res
-        .status(500)
-        .json({ success: false, message: "Internal server error" });
-    }
+  try {
+    await db.execute(query, [user_mail, term_id]);
     res.json({
       success: true,
       message: "Respiratory-system bookmark removed successfully",
     });
-  });
+  } catch (err) {
+    console.error("Error removing respiratory-system bookmark:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
 };
 
 // Display all respiratory-system bookmarks for the current user
-exports.getRespiratorySystemBookmarks = (req, res) => {
+exports.getRespiratorySystemBookmarks = async (req, res) => {
   const user_mail = req.user_mail;
 
   if (!user_mail) {
@@ -807,19 +786,19 @@ exports.getRespiratorySystemBookmarks = (req, res) => {
     WHERE b.bookmark_by = ?
     ORDER BY c.term 
   `;
-  db.query(query, [user_mail], (err, results) => {
-    if (err) {
-      console.error("Error fetching respiratory-system bookmarks:", err);
-      return res
-        .status(500)
-        .json({ success: false, message: "Internal server error" });
-    }
+  try {
+    const [results] = await db.execute(query, [user_mail]);
     res.json({ success: true, bookmarks: results });
-  });
+  } catch (err) {
+    console.error("Error fetching respiratory-system bookmarks:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
 };
 
 // Check if a respiratory-system term is bookmarked by the current user
-exports.isRespiratorySystemBookmarked = (req, res) => {
+exports.isRespiratorySystemBookmarked = async (req, res) => {
   const term_id = req.params.term_id;
   const user_mail = req.user_mail;
 
@@ -834,14 +813,8 @@ exports.isRespiratorySystemBookmarked = (req, res) => {
     FROM respiratory_system_bookmarks
     WHERE bookmark_by = ? AND term_id = ?
   `;
-  db.query(query, [user_mail, term_id], (err, results) => {
-    if (err) {
-      console.error("Error checking respiratory-system bookmark state:", err);
-      return res
-        .status(500)
-        .json({ success: false, message: "Internal server error" });
-    }
-
+  try {
+    const [results] = await db.execute(query, [user_mail, term_id]);
     const isBookmarked = results[0].isBookmarked > 0;
     res.json({
       success: true,
@@ -850,13 +823,18 @@ exports.isRespiratorySystemBookmarked = (req, res) => {
         ? "Respiratory-system term is bookmarked"
         : "Respiratory-system term is not bookmarked",
     });
-  });
+  } catch (err) {
+    console.error("Error checking respiratory-system bookmark state:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
 };
 
 // Urinary System
 
 // Add a urinary-system bookmark
-exports.addUrinarySystemBookmark = (req, res) => {
+exports.addUrinarySystemBookmark = async (req, res) => {
   const { term_id } = req.body;
   const user_mail = req.user_mail;
 
@@ -867,27 +845,26 @@ exports.addUrinarySystemBookmark = (req, res) => {
   }
 
   const query = `INSERT INTO urinary_system_bookmarks (bookmark_by, term_id) VALUES (?, ?)`;
-  db.query(query, [user_mail, term_id], (err) => {
-    if (err) {
-      if (err.code === "ER_DUP_ENTRY") {
-        return res
-          .status(409)
-          .json({ success: false, message: "Bookmark already exists" });
-      }
-      console.error("Error adding urinary-system bookmark:", err);
-      return res
-        .status(500)
-        .json({ success: false, message: "Internal server error" });
-    }
+  try {
+    await db.execute(query, [user_mail, term_id]);
     res.json({
       success: true,
       message: "Urinary-system bookmark added successfully",
     });
-  });
+  } catch (err) {
+    if (err.code === "ER_DUP_ENTRY") {
+      return res
+        .status(409)
+        .json({ success: false, message: "Bookmark already exists" });
+    }
+    console.error("Error adding urinary-system bookmark:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
 };
-
 // Remove a urinary-system bookmark
-exports.removeUrinarySystemBookmark = (req, res) => {
+exports.removeUrinarySystemBookmark = async (req, res) => {
   const { term_id } = req.body;
   const user_mail = req.user_mail;
 
@@ -898,22 +875,22 @@ exports.removeUrinarySystemBookmark = (req, res) => {
   }
 
   const query = `DELETE FROM urinary_system_bookmarks WHERE bookmark_by = ? AND term_id = ?`;
-  db.query(query, [user_mail, term_id], (err) => {
-    if (err) {
-      console.error("Error removing urinary-system bookmark:", err);
-      return res
-        .status(500)
-        .json({ success: false, message: "Internal server error" });
-    }
+  try {
+    await db.execute(query, [user_mail, term_id]);
     res.json({
       success: true,
       message: "Urinary-system bookmark removed successfully",
     });
-  });
+  } catch (err) {
+    console.error("Error removing urinary-system bookmark:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
 };
 
 // Display all urinary-system bookmarks for the current user
-exports.getUrinarySystemBookmarks = (req, res) => {
+exports.getUrinarySystemBookmarks = async (req, res) => {
   const user_mail = req.user_mail;
 
   if (!user_mail) {
@@ -929,19 +906,19 @@ exports.getUrinarySystemBookmarks = (req, res) => {
     WHERE b.bookmark_by = ?
     ORDER BY c.term 
   `;
-  db.query(query, [user_mail], (err, results) => {
-    if (err) {
-      console.error("Error fetching urinary-system bookmarks:", err);
-      return res
-        .status(500)
-        .json({ success: false, message: "Internal server error" });
-    }
+  try {
+    const [results] = await db.execute(query, [user_mail]);
     res.json({ success: true, bookmarks: results });
-  });
+  } catch (err) {
+    console.error("Error fetching urinary-system bookmarks:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
 };
 
 // Check if a urinary-system term is bookmarked by the current user
-exports.isUrinarySystemBookmarked = (req, res) => {
+exports.isUrinarySystemBookmarked = async (req, res) => {
   const term_id = req.params.term_id;
   const user_mail = req.user_mail;
 
@@ -956,14 +933,8 @@ exports.isUrinarySystemBookmarked = (req, res) => {
     FROM urinary_system_bookmarks
     WHERE bookmark_by = ? AND term_id = ?
   `;
-  db.query(query, [user_mail, term_id], (err, results) => {
-    if (err) {
-      console.error("Error checking urinary-system bookmark state:", err);
-      return res
-        .status(500)
-        .json({ success: false, message: "Internal server error" });
-    }
-
+  try {
+    const [results] = await db.execute(query, [user_mail, term_id]);
     const isBookmarked = results[0].isBookmarked > 0;
     res.json({
       success: true,
@@ -972,13 +943,18 @@ exports.isUrinarySystemBookmarked = (req, res) => {
         ? "Urinary-system term is bookmarked"
         : "Urinary-system term is not bookmarked",
     });
-  });
+  } catch (err) {
+    console.error("Error checking urinary-system bookmark state:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
 };
 
 // Muscular System English
 
 // Add a MuscleEnglish bookmark
-exports.addMuscleEnglishBookmark = (req, res) => {
+exports.addMuscleEnglishBookmark = async (req, res) => {
   const { term_id } = req.body;
   const user_mail = req.user_mail;
 
@@ -989,27 +965,27 @@ exports.addMuscleEnglishBookmark = (req, res) => {
   }
 
   const query = `INSERT INTO muscle_english_bookmarks (bookmark_by, term_id) VALUES (?, ?)`;
-  db.query(query, [user_mail, term_id], (err) => {
-    if (err) {
-      if (err.code === "ER_DUP_ENTRY") {
-        return res
-          .status(409)
-          .json({ success: false, message: "Bookmark already exists" });
-      }
-      console.error("Error adding Muscle English bookmark:", err);
-      return res
-        .status(500)
-        .json({ success: false, message: "Internal server error" });
-    }
+  try {
+    await db.execute(query, [user_mail, term_id]);
     res.json({
       success: true,
       message: "Muscle English bookmark added successfully",
     });
-  });
+  } catch (err) {
+    if (err.code === "ER_DUP_ENTRY") {
+      return res
+        .status(409)
+        .json({ success: false, message: "Bookmark already exists" });
+    }
+    console.error("Error adding Muscle English bookmark:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
 };
 
 // Remove a Muscle English bookmark
-exports.removeMuscleEnglishBookmark = (req, res) => {
+exports.removeMuscleEnglishBookmark = async (req, res) => {
   const { term_id } = req.body;
   const user_mail = req.user_mail;
 
@@ -1020,22 +996,22 @@ exports.removeMuscleEnglishBookmark = (req, res) => {
   }
 
   const query = `DELETE FROM muscle_english_bookmarks WHERE bookmark_by = ? AND term_id = ?`;
-  db.query(query, [user_mail, term_id], (err) => {
-    if (err) {
-      console.error("Error removing Muscle English bookmark:", err);
-      return res
-        .status(500)
-        .json({ success: false, message: "Internal server error" });
-    }
+  try {
+    await db.execute(query, [user_mail, term_id]);
     res.json({
       success: true,
       message: "Muscle English bookmark removed successfully",
     });
-  });
+  } catch (err) {
+    console.error("Error removing Muscle English bookmark:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
 };
 
 // Display all Muscle English bookmarks for the current user
-exports.getMuscleEnglishBookmarks = (req, res) => {
+exports.getMuscleEnglishBookmarks = async (req, res) => {
   const user_mail = req.user_mail;
 
   if (!user_mail) {
@@ -1051,19 +1027,19 @@ exports.getMuscleEnglishBookmarks = (req, res) => {
     WHERE b.bookmark_by = ?
     ORDER BY c.term 
   `;
-  db.query(query, [user_mail], (err, results) => {
-    if (err) {
-      console.error("Error fetching Muscle English bookmarks:", err);
-      return res
-        .status(500)
-        .json({ success: false, message: "Internal server error" });
-    }
+  try {
+    const [results] = await db.execute(query, [user_mail]);
     res.json({ success: true, bookmarks: results });
-  });
+  } catch (err) {
+    console.error("Error fetching Muscle English bookmarks:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
 };
 
 // Check if a Muscle English term is bookmarked by the current user
-exports.isMuscleEnglishBookmarked = (req, res) => {
+exports.isMuscleEnglishBookmarked = async (req, res) => {
   const term_id = req.params.term_id;
   const user_mail = req.user_mail;
 
@@ -1078,14 +1054,8 @@ exports.isMuscleEnglishBookmarked = (req, res) => {
     FROM muscle_english_bookmarks
     WHERE bookmark_by = ? AND term_id = ?
   `;
-  db.query(query, [user_mail, term_id], (err, results) => {
-    if (err) {
-      console.error("Error checking Muscle English bookmark state:", err);
-      return res
-        .status(500)
-        .json({ success: false, message: "Internal server error" });
-    }
-
+  try {
+    const [results] = await db.execute(query, [user_mail, term_id]);
     const isBookmarked = results[0].isBookmarked > 0;
     res.json({
       success: true,
@@ -1094,11 +1064,16 @@ exports.isMuscleEnglishBookmarked = (req, res) => {
         ? "Muscle English term is bookmarked"
         : "Muscle English term is not bookmarked",
     });
-  });
+  } catch (err) {
+    console.error("Error checking Muscle English bookmark state:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
 };
 
 // Add a digestive-system bookmark
-exports.addDigestiveSystemBookmark = (req, res) => {
+exports.addDigestiveSystemBookmark = async (req, res) => {
   const { term_id } = req.body;
   const user_mail = req.user_mail;
 
@@ -1109,27 +1084,27 @@ exports.addDigestiveSystemBookmark = (req, res) => {
   }
 
   const query = `INSERT INTO digestive_system_bookmarks (bookmark_by, term_id) VALUES (?, ?)`;
-  db.query(query, [user_mail, term_id], (err) => {
-    if (err) {
-      if (err.code === "ER_DUP_ENTRY") {
-        return res
-          .status(409)
-          .json({ success: false, message: "Bookmark already exists" });
-      }
-      console.error("Error adding digestive-system bookmark:", err);
-      return res
-        .status(500)
-        .json({ success: false, message: "Internal server error" });
-    }
+  try {
+    await db.execute(query, [user_mail, term_id]);
     res.json({
       success: true,
       message: "Digestive-system bookmark added successfully",
     });
-  });
+  } catch (err) {
+    if (err.code === "ER_DUP_ENTRY") {
+      return res
+        .status(409)
+        .json({ success: false, message: "Bookmark already exists" });
+    }
+    console.error("Error adding digestive-system bookmark:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
 };
 
 // Remove a digestive-system bookmark
-exports.removeDigestiveSystemBookmark = (req, res) => {
+exports.removeDigestiveSystemBookmark = async (req, res) => {
   const { term_id } = req.body;
   const user_mail = req.user_mail;
 
@@ -1140,22 +1115,22 @@ exports.removeDigestiveSystemBookmark = (req, res) => {
   }
 
   const query = `DELETE FROM digestive_system_bookmarks WHERE bookmark_by = ? AND term_id = ?`;
-  db.query(query, [user_mail, term_id], (err) => {
-    if (err) {
-      console.error("Error removing digestive-system bookmark:", err);
-      return res
-        .status(500)
-        .json({ success: false, message: "Internal server error" });
-    }
+  try {
+    await db.execute(query, [user_mail, term_id]);
     res.json({
       success: true,
       message: "Digestive-system bookmark removed successfully",
     });
-  });
+  } catch (err) {
+    console.error("Error removing digestive-system bookmark:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
 };
 
 // Display all digestive-system bookmarks for the current user
-exports.getDigestiveSystemBookmarks = (req, res) => {
+exports.getDigestiveSystemBookmarks = async (req, res) => {
   const user_mail = req.user_mail;
 
   if (!user_mail) {
@@ -1171,19 +1146,18 @@ exports.getDigestiveSystemBookmarks = (req, res) => {
     WHERE b.bookmark_by = ?
     ORDER BY c.term 
   `;
-  db.query(query, [user_mail], (err, results) => {
-    if (err) {
-      console.error("Error fetching digestive-system bookmarks:", err);
-      return res
-        .status(500)
-        .json({ success: false, message: "Internal server error" });
-    }
+  try {
+    const [results] = await db.execute(query, [user_mail]);
     res.json({ success: true, bookmarks: results });
-  });
+  } catch (err) {
+    console.error("Error fetching digestive-system bookmarks:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
 };
-
 // Check if a digestive-system term is bookmarked by the current user
-exports.isDigestiveSystemBookmarked = (req, res) => {
+exports.isDigestiveSystemBookmarked = async (req, res) => {
   const term_id = req.params.term_id;
   const user_mail = req.user_mail;
 
@@ -1198,14 +1172,8 @@ exports.isDigestiveSystemBookmarked = (req, res) => {
     FROM digestive_system_bookmarks
     WHERE bookmark_by = ? AND term_id = ?
   `;
-  db.query(query, [user_mail, term_id], (err, results) => {
-    if (err) {
-      console.error("Error checking digestive-system bookmark state:", err);
-      return res
-        .status(500)
-        .json({ success: false, message: "Internal server error" });
-    }
-
+  try {
+    const [results] = await db.execute(query, [user_mail, term_id]);
     const isBookmarked = results[0].isBookmarked > 0;
     res.json({
       success: true,
@@ -1214,11 +1182,16 @@ exports.isDigestiveSystemBookmarked = (req, res) => {
         ? "Digestive-system term is bookmarked"
         : "Digestive-system term is not bookmarked",
     });
-  });
+  } catch (err) {
+    console.error("Error checking digestive-system bookmark state:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
 };
 
 // Add an immune-system bookmark
-exports.addImmuneSystemBookmark = (req, res) => {
+exports.addImmuneSystemBookmark = async (req, res) => {
   const { term_id } = req.body;
   const user_mail = req.user_mail;
 
@@ -1229,27 +1202,27 @@ exports.addImmuneSystemBookmark = (req, res) => {
   }
 
   const query = `INSERT INTO immune_system_bookmarks (bookmark_by, term_id) VALUES (?, ?)`;
-  db.query(query, [user_mail, term_id], (err) => {
-    if (err) {
-      if (err.code === "ER_DUP_ENTRY") {
-        return res
-          .status(409)
-          .json({ success: false, message: "Bookmark already exists" });
-      }
-      console.error("Error adding immune-system bookmark:", err);
-      return res
-        .status(500)
-        .json({ success: false, message: "Internal server error" });
-    }
+  try {
+    await db.execute(query, [user_mail, term_id]);
     res.json({
       success: true,
       message: "Immune-system bookmark added successfully",
     });
-  });
+  } catch (err) {
+    if (err.code === "ER_DUP_ENTRY") {
+      return res
+        .status(409)
+        .json({ success: false, message: "Bookmark already exists" });
+    }
+    console.error("Error adding immune-system bookmark:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
 };
 
 // Remove an immune-system bookmark
-exports.removeImmuneSystemBookmark = (req, res) => {
+exports.removeImmuneSystemBookmark = async (req, res) => {
   const { term_id } = req.body;
   const user_mail = req.user_mail;
 
@@ -1260,22 +1233,22 @@ exports.removeImmuneSystemBookmark = (req, res) => {
   }
 
   const query = `DELETE FROM immune_system_bookmarks WHERE bookmark_by = ? AND term_id = ?`;
-  db.query(query, [user_mail, term_id], (err) => {
-    if (err) {
-      console.error("Error removing immune-system bookmark:", err);
-      return res
-        .status(500)
-        .json({ success: false, message: "Internal server error" });
-    }
+  try {
+    await db.execute(query, [user_mail, term_id]);
     res.json({
       success: true,
       message: "Immune-system bookmark removed successfully",
     });
-  });
+  } catch (err) {
+    console.error("Error removing immune-system bookmark:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
 };
 
 // Display all immune-system bookmarks for the current user
-exports.getImmuneSystemBookmarks = (req, res) => {
+exports.getImmuneSystemBookmarks = async (req, res) => {
   const user_mail = req.user_mail;
 
   if (!user_mail) {
@@ -1291,19 +1264,19 @@ exports.getImmuneSystemBookmarks = (req, res) => {
     WHERE b.bookmark_by = ?
     ORDER BY c.term 
   `;
-  db.query(query, [user_mail], (err, results) => {
-    if (err) {
-      console.error("Error fetching immune-system bookmarks:", err);
-      return res
-        .status(500)
-        .json({ success: false, message: "Internal server error" });
-    }
+  try {
+    const [results] = await db.execute(query, [user_mail]);
     res.json({ success: true, bookmarks: results });
-  });
+  } catch (err) {
+    console.error("Error fetching immune-system bookmarks:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
 };
 
 // Check if an immune-system term is bookmarked by the current user
-exports.isImmuneSystemBookmarked = (req, res) => {
+exports.isImmuneSystemBookmarked = async (req, res) => {
   const term_id = req.params.term_id;
   const user_mail = req.user_mail;
 
@@ -1318,14 +1291,8 @@ exports.isImmuneSystemBookmarked = (req, res) => {
     FROM immune_system_bookmarks
     WHERE bookmark_by = ? AND term_id = ?
   `;
-  db.query(query, [user_mail, term_id], (err, results) => {
-    if (err) {
-      console.error("Error checking immune-system bookmark state:", err);
-      return res
-        .status(500)
-        .json({ success: false, message: "Internal server error" });
-    }
-
+  try {
+    const [results] = await db.execute(query, [user_mail, term_id]);
     const isBookmarked = results[0].isBookmarked > 0;
     res.json({
       success: true,
@@ -1334,11 +1301,16 @@ exports.isImmuneSystemBookmarked = (req, res) => {
         ? "Immune-system term is bookmarked"
         : "Immune-system term is not bookmarked",
     });
-  });
+  } catch (err) {
+    console.error("Error checking immune-system bookmark state:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
 };
 
 // Add a joint-system bookmark
-exports.addJointSystemBookmark = (req, res) => {
+exports.addJointSystemBookmark = async (req, res) => {
   const { term_id } = req.body;
   const user_mail = req.user_mail;
 
@@ -1349,27 +1321,28 @@ exports.addJointSystemBookmark = (req, res) => {
   }
 
   const query = `INSERT INTO joint_system_bookmarks (bookmark_by, term_id) VALUES (?, ?)`;
-  db.query(query, [user_mail, term_id], (err) => {
-    if (err) {
-      if (err.code === "ER_DUP_ENTRY") {
-        return res
-          .status(409)
-          .json({ success: false, message: "Bookmark already exists" });
-      }
-      console.error("Error adding joint-system bookmark:", err);
-      return res
-        .status(500)
-        .json({ success: false, message: "Internal server error" });
-    }
+  try {
+    await db.execute(query, [user_mail, term_id]);
     res.json({
       success: true,
       message: "Joint-system bookmark added successfully",
     });
-  });
+  } catch (err) {
+    if (err.code === "ER_DUP_ENTRY") {
+      return res
+        .status(409)
+        .json({ success: false, message: "Bookmark already exists" });
+    }
+    console.error("Error adding joint-system bookmark:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
 };
+const db = require("../config/db");
 
 // Remove a joint-system bookmark
-exports.removeJointSystemBookmark = (req, res) => {
+exports.removeJointSystemBookmark = async (req, res) => {
   const { term_id } = req.body;
   const user_mail = req.user_mail;
 
@@ -1380,22 +1353,22 @@ exports.removeJointSystemBookmark = (req, res) => {
   }
 
   const query = `DELETE FROM joint_system_bookmarks WHERE bookmark_by = ? AND term_id = ?`;
-  db.query(query, [user_mail, term_id], (err) => {
-    if (err) {
-      console.error("Error removing joint-system bookmark:", err);
-      return res
-        .status(500)
-        .json({ success: false, message: "Internal server error" });
-    }
+  try {
+    await db.execute(query, [user_mail, term_id]);
     res.json({
       success: true,
       message: "Joint-system bookmark removed successfully",
     });
-  });
+  } catch (err) {
+    console.error("Error removing joint-system bookmark:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
 };
 
 // Display all joint-system bookmarks for the current user
-exports.getJointSystemBookmarks = (req, res) => {
+exports.getJointSystemBookmarks = async (req, res) => {
   const user_mail = req.user_mail;
 
   if (!user_mail) {
@@ -1411,19 +1384,19 @@ exports.getJointSystemBookmarks = (req, res) => {
     WHERE b.bookmark_by = ?
     ORDER BY c.term 
   `;
-  db.query(query, [user_mail], (err, results) => {
-    if (err) {
-      console.error("Error fetching joint-system bookmarks:", err);
-      return res
-        .status(500)
-        .json({ success: false, message: "Internal server error" });
-    }
+  try {
+    const [results] = await db.execute(query, [user_mail]);
     res.json({ success: true, bookmarks: results });
-  });
+  } catch (err) {
+    console.error("Error fetching joint-system bookmarks:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
 };
 
 // Check if a joint-system term is bookmarked by the current user
-exports.isJointSystemBookmarked = (req, res) => {
+exports.isJointSystemBookmarked = async (req, res) => {
   const term_id = req.params.term_id;
   const user_mail = req.user_mail;
 
@@ -1438,14 +1411,8 @@ exports.isJointSystemBookmarked = (req, res) => {
     FROM joint_system_bookmarks
     WHERE bookmark_by = ? AND term_id = ?
   `;
-  db.query(query, [user_mail, term_id], (err, results) => {
-    if (err) {
-      console.error("Error checking joint-system bookmark state:", err);
-      return res
-        .status(500)
-        .json({ success: false, message: "Internal server error" });
-    }
-
+  try {
+    const [results] = await db.execute(query, [user_mail, term_id]);
     const isBookmarked = results[0].isBookmarked > 0;
     res.json({
       success: true,
@@ -1454,11 +1421,16 @@ exports.isJointSystemBookmarked = (req, res) => {
         ? "Joint-system term is bookmarked"
         : "Joint-system term is not bookmarked",
     });
-  });
+  } catch (err) {
+    console.error("Error checking joint-system bookmark state:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
 };
 
 // Add a muscular-system bookmark
-exports.addMuscularSystemBookmark = (req, res) => {
+exports.addMuscularSystemBookmark = async (req, res) => {
   const { term_id } = req.body;
   const user_mail = req.user_mail;
 
@@ -1469,27 +1441,27 @@ exports.addMuscularSystemBookmark = (req, res) => {
   }
 
   const query = `INSERT INTO muscular_system_bookmarks (bookmark_by, term_id) VALUES (?, ?)`;
-  db.query(query, [user_mail, term_id], (err) => {
-    if (err) {
-      if (err.code === "ER_DUP_ENTRY") {
-        return res
-          .status(409)
-          .json({ success: false, message: "Bookmark already exists" });
-      }
-      console.error("Error adding muscular-system bookmark:", err);
-      return res
-        .status(500)
-        .json({ success: false, message: "Internal server error" });
-    }
+  try {
+    await db.execute(query, [user_mail, term_id]);
     res.json({
       success: true,
       message: "Muscular-system bookmark added successfully",
     });
-  });
+  } catch (err) {
+    if (err.code === "ER_DUP_ENTRY") {
+      return res
+        .status(409)
+        .json({ success: false, message: "Bookmark already exists" });
+    }
+    console.error("Error adding muscular-system bookmark:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
 };
 
 // Remove a muscular-system bookmark
-exports.removeMuscularSystemBookmark = (req, res) => {
+exports.removeMuscularSystemBookmark = async (req, res) => {
   const { term_id } = req.body;
   const user_mail = req.user_mail;
 
@@ -1500,22 +1472,22 @@ exports.removeMuscularSystemBookmark = (req, res) => {
   }
 
   const query = `DELETE FROM muscular_system_bookmarks WHERE bookmark_by = ? AND term_id = ?`;
-  db.query(query, [user_mail, term_id], (err) => {
-    if (err) {
-      console.error("Error removing muscular-system bookmark:", err);
-      return res
-        .status(500)
-        .json({ success: false, message: "Internal server error" });
-    }
+  try {
+    await db.execute(query, [user_mail, term_id]);
     res.json({
       success: true,
       message: "Muscular-system bookmark removed successfully",
     });
-  });
+  } catch (err) {
+    console.error("Error removing muscular-system bookmark:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
 };
 
 // Display all muscular-system bookmarks for the current user
-exports.getMuscularSystemBookmarks = (req, res) => {
+exports.getMuscularSystemBookmarks = async (req, res) => {
   const user_mail = req.user_mail;
 
   if (!user_mail) {
@@ -1531,19 +1503,19 @@ exports.getMuscularSystemBookmarks = (req, res) => {
     WHERE b.bookmark_by = ?
     ORDER BY c.term 
   `;
-  db.query(query, [user_mail], (err, results) => {
-    if (err) {
-      console.error("Error fetching muscular-system bookmarks:", err);
-      return res
-        .status(500)
-        .json({ success: false, message: "Internal server error" });
-    }
+  try {
+    const [results] = await db.execute(query, [user_mail]);
     res.json({ success: true, bookmarks: results });
-  });
+  } catch (err) {
+    console.error("Error fetching muscular-system bookmarks:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
 };
 
 // Check if a muscular-system term is bookmarked by the current user
-exports.isMuscularSystemBookmarked = (req, res) => {
+exports.isMuscularSystemBookmarked = async (req, res) => {
   const term_id = req.params.term_id;
   const user_mail = req.user_mail;
 
@@ -1558,14 +1530,8 @@ exports.isMuscularSystemBookmarked = (req, res) => {
     FROM muscular_system_bookmarks
     WHERE bookmark_by = ? AND term_id = ?
   `;
-  db.query(query, [user_mail, term_id], (err, results) => {
-    if (err) {
-      console.error("Error checking muscular-system bookmark state:", err);
-      return res
-        .status(500)
-        .json({ success: false, message: "Internal server error" });
-    }
-
+  try {
+    const [results] = await db.execute(query, [user_mail, term_id]);
     const isBookmarked = results[0].isBookmarked > 0;
     res.json({
       success: true,
@@ -1574,11 +1540,15 @@ exports.isMuscularSystemBookmarked = (req, res) => {
         ? "Muscular-system term is bookmarked"
         : "Muscular-system term is not bookmarked",
     });
-  });
+  } catch (err) {
+    console.error("Error checking muscular-system bookmark state:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
 };
-
 // Add a plane-system bookmark
-exports.addPlaneSystemBookmark = (req, res) => {
+exports.addPlaneSystemBookmark = async (req, res) => {
   const { term_id } = req.body;
   const user_mail = req.user_mail;
 
@@ -1589,27 +1559,27 @@ exports.addPlaneSystemBookmark = (req, res) => {
   }
 
   const query = `INSERT INTO plane_system_bookmarks (bookmark_by, term_id) VALUES (?, ?)`;
-  db.query(query, [user_mail, term_id], (err) => {
-    if (err) {
-      if (err.code === "ER_DUP_ENTRY") {
-        return res
-          .status(409)
-          .json({ success: false, message: "Bookmark already exists" });
-      }
-      console.error("Error adding plane-system bookmark:", err);
-      return res
-        .status(500)
-        .json({ success: false, message: "Internal server error" });
-    }
+  try {
+    await db.execute(query, [user_mail, term_id]);
     res.json({
       success: true,
       message: "Plane-system bookmark added successfully",
     });
-  });
+  } catch (err) {
+    if (err.code === "ER_DUP_ENTRY") {
+      return res
+        .status(409)
+        .json({ success: false, message: "Bookmark already exists" });
+    }
+    console.error("Error adding plane-system bookmark:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
 };
 
 // Remove a plane-system bookmark
-exports.removePlaneSystemBookmark = (req, res) => {
+exports.removePlaneSystemBookmark = async (req, res) => {
   const { term_id } = req.body;
   const user_mail = req.user_mail;
 
@@ -1620,22 +1590,22 @@ exports.removePlaneSystemBookmark = (req, res) => {
   }
 
   const query = `DELETE FROM plane_system_bookmarks WHERE bookmark_by = ? AND term_id = ?`;
-  db.query(query, [user_mail, term_id], (err) => {
-    if (err) {
-      console.error("Error removing plane-system bookmark:", err);
-      return res
-        .status(500)
-        .json({ success: false, message: "Internal server error" });
-    }
+  try {
+    await db.execute(query, [user_mail, term_id]);
     res.json({
       success: true,
       message: "Plane-system bookmark removed successfully",
     });
-  });
+  } catch (err) {
+    console.error("Error removing plane-system bookmark:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
 };
 
 // Display all plane-system bookmarks for the current user
-exports.getPlaneSystemBookmarks = (req, res) => {
+exports.getPlaneSystemBookmarks = async (req, res) => {
   const user_mail = req.user_mail;
 
   if (!user_mail) {
@@ -1651,19 +1621,19 @@ exports.getPlaneSystemBookmarks = (req, res) => {
     WHERE b.bookmark_by = ?
     ORDER BY c.term 
   `;
-  db.query(query, [user_mail], (err, results) => {
-    if (err) {
-      console.error("Error fetching plane-system bookmarks:", err);
-      return res
-        .status(500)
-        .json({ success: false, message: "Internal server error" });
-    }
+  try {
+    const [results] = await db.execute(query, [user_mail]);
     res.json({ success: true, bookmarks: results });
-  });
+  } catch (err) {
+    console.error("Error fetching plane-system bookmarks:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
 };
 
 // Check if a plane-system term is bookmarked by the current user
-exports.isPlaneSystemBookmarked = (req, res) => {
+exports.isPlaneSystemBookmarked = async (req, res) => {
   const term_id = req.params.term_id;
   const user_mail = req.user_mail;
 
@@ -1678,14 +1648,8 @@ exports.isPlaneSystemBookmarked = (req, res) => {
     FROM plane_system_bookmarks
     WHERE bookmark_by = ? AND term_id = ?
   `;
-  db.query(query, [user_mail, term_id], (err, results) => {
-    if (err) {
-      console.error("Error checking plane-system bookmark state:", err);
-      return res
-        .status(500)
-        .json({ success: false, message: "Internal server error" });
-    }
-
+  try {
+    const [results] = await db.execute(query, [user_mail, term_id]);
     const isBookmarked = results[0].isBookmarked > 0;
     res.json({
       success: true,
@@ -1694,5 +1658,10 @@ exports.isPlaneSystemBookmarked = (req, res) => {
         ? "Plane-system term is bookmarked"
         : "Plane-system term is not bookmarked",
     });
-  });
+  } catch (err) {
+    console.error("Error checking plane-system bookmark state:", err);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
 };

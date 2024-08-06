@@ -1,17 +1,19 @@
 const db = require("../config/db");
 
-exports.updateProfile = (req, res) => {
+// Update user profile
+exports.updateProfile = async (req, res) => {
   const { name, email } = req.body;
   const currentUserMail = req.user_mail;
 
+  if (!name || !email) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Missing required fields" });
+  }
+
   const query = `UPDATE user SET user_name = ?, user_mail = ? WHERE user_mail = ?`;
-  db.query(query, [name, email, currentUserMail], (err, results) => {
-    if (err) {
-      console.error("Error updating profile:", err);
-      return res
-        .status(500)
-        .json({ success: false, message: "Failed to update profile" });
-    }
+  try {
+    const [results] = await db.execute(query, [name, email, currentUserMail]);
 
     if (results.changedRows === 1) {
       res.json({ success: true, message: "Profile updated successfully" });
@@ -25,17 +27,20 @@ exports.updateProfile = (req, res) => {
         });
       }
     }
-  });
+  } catch (err) {
+    console.error("Error updating profile:", err);
+    res
+      .status(500)
+      .json({ success: false, message: "Failed to update profile" });
+  }
 };
 
-exports.getSecuredInfo = (req, res) => {
+// Get secured user information
+exports.getSecuredInfo = async (req, res) => {
   const query = `SELECT user_name FROM user WHERE user_mail = ?`;
-  db.query(query, [req.user_mail], (err, results) => {
-    if (err) {
-      return res
-        .status(500)
-        .json({ success: false, message: "Error retrieving user information" });
-    }
+  try {
+    const [results] = await db.execute(query, [req.user_mail]);
+
     if (results.length === 1) {
       const user = results[0];
       res.json({
@@ -46,5 +51,10 @@ exports.getSecuredInfo = (req, res) => {
     } else {
       res.status(404).json({ success: false, message: "User not found" });
     }
-  });
+  } catch (err) {
+    console.error("Error retrieving user information:", err);
+    res
+      .status(500)
+      .json({ success: false, message: "Error retrieving user information" });
+  }
 };

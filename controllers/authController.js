@@ -16,7 +16,7 @@ exports.login = async (req, res) => {
   const query = `SELECT * FROM user WHERE user_mail = ?`;
 
   try {
-    const [results] = await db.query(query, [user_mail]);
+    const [results] = await db.execute(query, [user_mail]);
 
     if (results.length === 1) {
       const user = results[0];
@@ -56,7 +56,7 @@ exports.signup = async (req, res) => {
   try {
     const hashedPassword = await bcrypt.hash(user_password, 10);
     const query = `INSERT INTO user (user_name, user_mail, user_password) VALUES (?, ?, ?)`;
-    const [results] = await db.query(query, [
+    const [results] = await db.execute(query, [
       user_name,
       user_mail,
       hashedPassword,
@@ -80,7 +80,7 @@ exports.checkEmail = async (req, res) => {
   const query = `SELECT user_mail FROM user WHERE user_mail = ?`;
 
   try {
-    const [results] = await db.query(query, [user_mail]);
+    const [results] = await db.execute(query, [user_mail]);
 
     if (results.length > 0) {
       res.json({ available: false });
