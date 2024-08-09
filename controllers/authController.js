@@ -92,3 +92,47 @@ exports.checkEmail = async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 };
+
+exports.changePassword = async (req, res) => {
+  const { user_mail, current_password, new_password } = req.body;
+  const query = `SELECT * FROM user WHERE user_mail = ?`;
+
+  try {
+    const [results] = await db.execute(query, [user_mail]);
+
+    if (results.length === 1) {
+      const user = results[0];
+      const hashedPassword = user.user_password;
+
+      const isPasswordMatch = await bcrypt.compare(
+        current_password,
+        hashedPassword
+      );
+
+      if (isPasswordMatch) {
+        const newHashedPassword = await bcrypt.hash(new_password, 10);
+
+        const updateQuery = `UPDATE user SET user_password = ? WHERE user_mail = ?`;
+        await db.execute(updateQuery, [newHashedPassword, user_mail]);
+
+        res.json({
+          success: true,
+          message: "Password changed successfully",
+        });
+      } else {
+        res.status(401).json({
+          success: false,
+          message: "Current password is incorrect",
+        });
+      }
+    } else {
+      res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+  } catch (err) {
+    console.error("Error changing password:", err);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
