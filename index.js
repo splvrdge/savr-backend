@@ -5,6 +5,7 @@ const userRoutes = require("./routes/userRoutes");
 const incomeRoutes = require("./routes/incomeRoutes");
 const expenseRoutes = require("./routes/expenseRoutes");
 const goalRoutes = require("./routes/goalsRoutes");
+const financialRoutes = require("./routes/financialRoutes");
 
 const cron = require("node-cron");
 const db = require("./config/db");
@@ -19,6 +20,7 @@ app.use("/api/user", userRoutes);
 app.use("/api/income", incomeRoutes);
 app.use("/api/expense", expenseRoutes);
 app.use("/api/goal", goalRoutes);
+app.use("/api/financial", financialRoutes);
 
 cron.schedule("0 0 * * *", async () => {
   try {

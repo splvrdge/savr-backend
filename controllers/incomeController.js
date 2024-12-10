@@ -2,15 +2,30 @@ const db = require("../config/db");
 
 exports.addIncome = async (req, res) => {
   const { user_id, amount, description, category } = req.body;
-  const query = `INSERT INTO incomes (user_id, amount, description, category) VALUES (?, ?, ?, ?)`;
+
+  const insertIncomeQuery = `
+    INSERT INTO user_financial_data (user_id, type, amount, timestamp)
+    VALUES (?, 'income', ?, NOW())
+  `;
+
+  const updateFinancialSummaryQuery = `
+    INSERT INTO user_financial_summary (user_id, current_balance, net_savings, total_expenses, last_updated)
+    VALUES (?, ?, ?, 0, NOW())
+    ON DUPLICATE KEY UPDATE
+      current_balance = current_balance + ?, net_savings = net_savings + ?, last_updated = NOW()
+  `;
 
   try {
-    const [results] = await db.execute(query, [
+    await db.execute(insertIncomeQuery, [user_id, amount]);
+
+    await db.execute(updateFinancialSummaryQuery, [
       user_id,
       amount,
-      description,
-      category,
+      amount,
+      amount,
+      amount,
     ]);
+
     res
       .status(201)
       .json({ success: true, message: "Income added successfully" });
