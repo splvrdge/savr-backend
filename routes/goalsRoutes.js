@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const goalController = require("../controllers/goalController");
+const goalController = require("../controllers/goalsController");
 const authMiddleware = require("../middlewares/authMiddleware");
 
 router.post("/add", authMiddleware.verifyToken, goalController.addGoal);
