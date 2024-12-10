@@ -45,7 +45,6 @@ exports.login = async (req, res) => {
         const accessToken = generateAccessToken(user);
         const refreshToken = generateRefreshToken(user);
 
-        // Save the refresh token to the database
         const insertTokenQuery = `
           INSERT INTO tokens (user_id, refresh_token, expires_at)
           VALUES (?, ?, ?)
@@ -101,7 +100,6 @@ exports.signup = async (req, res) => {
     const accessToken = generateAccessToken(user);
     const refreshToken = generateRefreshToken(user);
 
-    // Save the refresh token to the database
     const insertTokenQuery = `
       INSERT INTO tokens (user_id, refresh_token, expires_at)
       VALUES (?, ?, ?)
@@ -132,7 +130,6 @@ exports.refreshToken = async (req, res) => {
   }
 
   try {
-    // Verify the refresh token
     const decoded = jwt.verify(refreshToken, refreshTokenSecret);
     const query = `SELECT * FROM tokens WHERE refresh_token = ?`;
 
