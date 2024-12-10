@@ -17,8 +17,6 @@ exports.addExpense = async (req, res) => {
 
   try {
     await db.execute(insertExpenseQuery, [user_id, amount]);
-
-    // Update the financial summary
     await db.execute(updateFinancialSummaryQuery, [
       user_id,
       -amount,
@@ -26,7 +24,6 @@ exports.addExpense = async (req, res) => {
       amount,
       amount,
     ]);
-
     res
       .status(201)
       .json({ success: true, message: "Expense added successfully" });
@@ -58,6 +55,20 @@ exports.deleteExpense = async (req, res) => {
     res.json({ success: true, message: "Expense deleted successfully" });
   } catch (err) {
     console.error("Error deleting expense:", err);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
+
+exports.getExpenses = async (req, res) => {
+  const { user_id } = req.params;
+
+  const query = `SELECT * FROM expenses WHERE user_id = ?`;
+
+  try {
+    const [results] = await db.execute(query, [user_id]);
+    res.json({ success: true, data: results });
+  } catch (err) {
+    console.error("Error fetching expenses:", err);
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 };
