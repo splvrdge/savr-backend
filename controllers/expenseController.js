@@ -4,7 +4,7 @@ exports.addExpense = async (req, res) => {
   const { user_id, amount, description, category } = req.body;
 
   const insertExpenseQuery = `
-    INSERT INTO user_financial_data (user_id, type, amount, timestamp)
+    INSERT INTO expenses (user_id, type, amount, timestamp)
     VALUES (?, 'expense', ?, NOW())
   `;
 
@@ -18,6 +18,7 @@ exports.addExpense = async (req, res) => {
   try {
     await db.execute(insertExpenseQuery, [user_id, amount]);
 
+    // Update the financial summary
     await db.execute(updateFinancialSummaryQuery, [
       user_id,
       -amount,
