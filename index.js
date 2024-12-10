@@ -3,7 +3,7 @@ const bodyParser = require("body-parser");
 const authRoutes = require("./routes/authRoutes");
 const userRoutes = require("./routes/userRoutes");
 const cron = require("node-cron");
-const db = require("./config/db"); // Adjust the path if necessary
+const db = require("./config/db");
 
 const app = express();
 const SERVER_PORT = process.env.SERVER_PORT;
@@ -23,6 +23,6 @@ cron.schedule("0 0 * * *", async () => {
   }
 });
 
-app.listen(PORT, () => {
+app.listen(SERVER_PORT, () => {
   console.log(`Server is running on port ${SERVER_PORT}`);
 });
