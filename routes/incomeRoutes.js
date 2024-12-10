@@ -20,4 +20,9 @@ router.delete(
   incomeController.deleteIncome
 );
 
+router.get("/categories", (req, res) => {
+  const categories = ["Business", "Investments", "Salary", "Other Income"];
+  res.json({ success: true, data: categories });
+});
+
 module.exports = router;
