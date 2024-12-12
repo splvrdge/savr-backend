@@ -62,6 +62,7 @@ exports.login = async (req, res) => {
           accessToken,
           refreshToken,
           user_name: user.user_name,
+          user_id: user.user_id
         });
       } else {
         res
