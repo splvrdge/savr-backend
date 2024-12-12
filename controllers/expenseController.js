@@ -37,15 +37,55 @@ exports.addExpense = async (req, res) => {
 };
 
 exports.updateExpense = async (req, res) => {
-  const { expense_id, amount, description, category } = req.body;
-  const query = `UPDATE expenses SET amount = ?, description = ?, category = ? WHERE expense_id = ?`;
+  const { expense_id, amount, description, category, user_id } = req.body;
+  
+  // First, get the old amount to update the summary
+  const getOldAmountQuery = `
+    SELECT amount FROM user_financial_data 
+    WHERE id = ? AND type = 'expense'
+  `;
+  
+  const updateExpenseQuery = `
+    UPDATE user_financial_data 
+    SET amount = ?, description = ?, category = ? 
+    WHERE id = ? AND type = 'expense'
+  `;
 
+  const updateSummaryQuery = `
+    UPDATE user_financial_summary 
+    SET 
+      current_balance = current_balance + ? - ?,
+      total_expenses = total_expenses - ? + ?,
+      last_updated = NOW()
+    WHERE user_id = ?
+  `;
+
+  const connection = await db.getConnection();
   try {
-    await db.execute(query, [amount, description, category, expense_id]);
+    await connection.beginTransaction();
+
+    // Get the old amount
+    const [oldAmountResult] = await connection.execute(getOldAmountQuery, [expense_id]);
+    if (!oldAmountResult.length) {
+      await connection.rollback();
+      return res.status(404).json({ success: false, message: "Expense not found" });
+    }
+    const oldAmount = oldAmountResult[0].amount;
+
+    // Update the expense
+    await connection.execute(updateExpenseQuery, [amount, description, category, expense_id]);
+
+    // Update the summary
+    await connection.execute(updateSummaryQuery, [oldAmount, amount, oldAmount, amount, user_id]);
+
+    await connection.commit();
     res.json({ success: true, message: "Expense updated successfully" });
   } catch (err) {
+    await connection.rollback();
     console.error("Error updating expense:", err);
     res.status(500).json({ success: false, message: "Internal server error" });
+  } finally {
+    connection.release();
   }
 };
 
