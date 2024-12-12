@@ -186,9 +186,9 @@ exports.checkEmail = async (req, res) => {
     const [results] = await db.execute(query, [user_email]);
 
     if (results.length > 0) {
-      res.json({ success: false, message: "Email is already taken" });
+      res.json({ available: false, message: "Email is already taken" });
     } else {
-      res.json({ success: true, message: "Email is available" });
+      res.json({ available: true, message: "Email is available" });
     }
   } catch (err) {
     console.error("Error checking email:", err);
