@@ -53,7 +53,8 @@ exports.getGoals = async (req, res) => {
 };
 
 exports.updateGoal = async (req, res) => {
-  const { goal_id, title, target_amount, description, category, target_date } = req.body;
+  const { goal_id } = req.params;
+  const { title, target_amount, description, category, target_date } = req.body;
   const query = `
     UPDATE goals 
     SET title = ?, 

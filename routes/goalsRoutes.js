@@ -6,7 +6,7 @@ const authMiddleware = require("../middlewares/authMiddleware");
 // Goal routes
 router.post("/add", authMiddleware.verifyToken, goalController.addGoal);
 router.get("/:user_id", authMiddleware.verifyToken, goalController.getGoals);
-router.put("/update", authMiddleware.verifyToken, goalController.updateGoal);
+router.put("/update/:goal_id", authMiddleware.verifyToken, goalController.updateGoal);
 router.delete("/delete/:goal_id", authMiddleware.verifyToken, goalController.deleteGoal);
 
 // Contribution routes
