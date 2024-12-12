@@ -1,11 +1,11 @@
 const db = require("../config/db");
 
 exports.addGoal = async (req, res) => {
-  const { user_id, title, target_amount, description, category, target_date } = req.body;
+  const { user_id, title, target_amount, target_date } = req.body;
   const query = `
     INSERT INTO goals (
-      user_id, title, target_amount, description, category, target_date, status
-    ) VALUES (?, ?, ?, ?, ?, ?, 'pending')
+      user_id, title, target_amount, target_date
+    ) VALUES (?, ?, ?, ?)
   `;
 
   try {
@@ -13,8 +13,6 @@ exports.addGoal = async (req, res) => {
       user_id,
       title,
       target_amount,
-      description,
-      category,
       target_date,
     ]);
     res.status(201).json({ 
@@ -54,15 +52,12 @@ exports.getGoals = async (req, res) => {
 
 exports.updateGoal = async (req, res) => {
   const { goal_id } = req.params;
-  const { title, target_amount, description, category, target_date } = req.body;
+  const { title, target_amount, target_date } = req.body;
   const query = `
     UPDATE goals 
     SET title = ?, 
         target_amount = ?, 
-        description = ?, 
-        category = ?,
-        target_date = ?,
-        progress_percentage = (current_amount / ? * 100)
+        target_date = ?
     WHERE goal_id = ?
   `;
 
@@ -70,10 +65,7 @@ exports.updateGoal = async (req, res) => {
     await db.execute(query, [
       title,
       target_amount,
-      description,
-      category,
       target_date,
-      target_amount,
       goal_id
     ]);
     res.json({ success: true, message: "Goal updated successfully" });

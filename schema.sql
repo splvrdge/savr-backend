@@ -104,16 +104,10 @@ CREATE TABLE goals (
     title VARCHAR(255) NOT NULL,
     target_amount DECIMAL(10, 2) NOT NULL,
     current_amount DECIMAL(10, 2) DEFAULT 0.00,
-    description TEXT,
-    category VARCHAR(50),
-    status ENUM('pending', 'in_progress', 'completed', 'cancelled') DEFAULT 'pending',
     target_date DATE NOT NULL,
-    progress_percentage DECIMAL(5, 2) DEFAULT 0.00,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
-    INDEX idx_user_status (user_id, status),
-    INDEX idx_target_date (target_date)
+    FOREIGN KEY (user_id) REFERENCES users(user_id)
 );
 
 -- Goal Contributions table
@@ -145,17 +139,6 @@ BEGIN
         FROM goal_contributions
         WHERE goal_id = NEW.goal_id
     ),
-    progress_percentage = (
-        SELECT (COALESCE(SUM(amount), 0) / target_amount) * 100
-        FROM goal_contributions
-        WHERE goal_id = NEW.goal_id
-    ),
-    status = CASE 
-        WHEN (SELECT (COALESCE(SUM(amount), 0) / target_amount) * 100
-              FROM goal_contributions
-              WHERE goal_id = NEW.goal_id) >= 100 THEN 'completed'
-        ELSE 'in_progress'
-    END,
     updated_at = CURRENT_TIMESTAMP
     WHERE goal_id = NEW.goal_id;
 END //
@@ -170,20 +153,6 @@ BEGIN
         FROM goal_contributions
         WHERE goal_id = OLD.goal_id
     ),
-    progress_percentage = (
-        SELECT (COALESCE(SUM(amount), 0) / target_amount) * 100
-        FROM goal_contributions
-        WHERE goal_id = OLD.goal_id
-    ),
-    status = CASE 
-        WHEN (SELECT COALESCE(SUM(amount), 0)
-              FROM goal_contributions
-              WHERE goal_id = OLD.goal_id) = 0 THEN 'pending'
-        WHEN (SELECT (COALESCE(SUM(amount), 0) / target_amount) * 100
-              FROM goal_contributions
-              WHERE goal_id = OLD.goal_id) >= 100 THEN 'completed'
-        ELSE 'in_progress'
-    END,
     updated_at = CURRENT_TIMESTAMP
     WHERE goal_id = OLD.goal_id;
 END //
