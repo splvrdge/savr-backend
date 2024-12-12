@@ -96,18 +96,45 @@ exports.deleteGoal = async (req, res) => {
 exports.addContribution = async (req, res) => {
   const { goal_id, user_id, amount, notes } = req.body;
   
+  // Validate input
+  if (!goal_id || !user_id || !amount) {
+    return res.status(400).json({ 
+      success: false, 
+      message: "Missing required fields: goal_id, user_id, and amount are required" 
+    });
+  }
+
+  if (isNaN(amount) || amount <= 0) {
+    return res.status(400).json({ 
+      success: false, 
+      message: "Amount must be a positive number" 
+    });
+  }
+
   const connection = await db.getConnection();
   try {
     await connection.beginTransaction();
+
+    // Check if goal exists and belongs to user
+    const [goals] = await connection.execute(
+      'SELECT * FROM goals WHERE goal_id = ? AND user_id = ?',
+      [goal_id, user_id]
+    );
+
+    if (goals.length === 0) {
+      await connection.rollback();
+      return res.status(404).json({ 
+        success: false, 
+        message: "Goal not found or does not belong to user" 
+      });
+    }
 
     // Add contribution
     const [contribution] = await connection.execute(
       `INSERT INTO goal_contributions (goal_id, user_id, amount, notes) 
        VALUES (?, ?, ?, ?)`,
-      [goal_id, user_id, amount, notes]
+      [goal_id, user_id, amount, notes || null]
     );
-
-    // The triggers will automatically update the goal's progress
 
     await connection.commit();
     
@@ -119,7 +146,11 @@ exports.addContribution = async (req, res) => {
   } catch (err) {
     await connection.rollback();
     console.error("Error adding contribution:", err);
-    res.status(500).json({ success: false, message: "Internal server error" });
+    res.status(500).json({ 
+      success: false, 
+      message: err.message || "Internal server error",
+      details: process.env.NODE_ENV === 'development' ? err.stack : undefined
+    });
   } finally {
     connection.release();
   }
