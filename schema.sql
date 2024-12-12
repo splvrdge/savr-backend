@@ -4,6 +4,7 @@ DROP TABLE IF EXISTS user_financial_summary;
 DROP TABLE IF EXISTS goals;
 DROP TABLE IF EXISTS expenses;
 DROP TABLE IF EXISTS incomes;
+DROP TABLE IF EXISTS tokens;
 DROP TABLE IF EXISTS users;
 
 -- Users table
@@ -15,6 +16,21 @@ CREATE TABLE users (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_user_email (user_email)
+);
+
+-- Tokens table
+CREATE TABLE tokens (
+    token_id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT NOT NULL,
+    refresh_token VARCHAR(512) NOT NULL,
+    expires_at TIMESTAMP NOT NULL,
+    is_revoked BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+    INDEX idx_user_tokens (user_id),
+    INDEX idx_refresh_token (refresh_token),
+    INDEX idx_token_expiry (expires_at)
 );
 
 -- Incomes table
