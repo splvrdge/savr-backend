@@ -2,6 +2,7 @@
 DROP TABLE IF EXISTS user_financial_data;
 DROP TABLE IF EXISTS user_financial_summary;
 DROP TABLE IF EXISTS goals;
+DROP TABLE IF EXISTS goal_contributions;
 DROP TABLE IF EXISTS expenses;
 DROP TABLE IF EXISTS incomes;
 DROP TABLE IF EXISTS tokens;
@@ -106,9 +107,85 @@ CREATE TABLE goals (
     description TEXT,
     category VARCHAR(50),
     status ENUM('pending', 'in_progress', 'completed', 'cancelled') DEFAULT 'pending',
-    target_date DATE,
+    target_date DATE NOT NULL,
+    progress_percentage DECIMAL(5, 2) DEFAULT 0.00,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
-    INDEX idx_user_status (user_id, status)
+    INDEX idx_user_status (user_id, status),
+    INDEX idx_target_date (target_date)
 );
+
+-- Goal Contributions table
+CREATE TABLE goal_contributions (
+    contribution_id INT PRIMARY KEY AUTO_INCREMENT,
+    goal_id INT NOT NULL,
+    user_id INT NOT NULL,
+    amount DECIMAL(10, 2) NOT NULL,
+    contribution_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (goal_id) REFERENCES goals(goal_id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+    INDEX idx_goal_date (goal_id, contribution_date),
+    INDEX idx_user_contributions (user_id, contribution_date)
+);
+
+-- Triggers for goal progress tracking
+DELIMITER //
+
+CREATE TRIGGER after_contribution_insert
+AFTER INSERT ON goal_contributions
+FOR EACH ROW
+BEGIN
+    UPDATE goals 
+    SET current_amount = (
+        SELECT COALESCE(SUM(amount), 0)
+        FROM goal_contributions
+        WHERE goal_id = NEW.goal_id
+    ),
+    progress_percentage = (
+        SELECT (COALESCE(SUM(amount), 0) / target_amount) * 100
+        FROM goal_contributions
+        WHERE goal_id = NEW.goal_id
+    ),
+    status = CASE 
+        WHEN (SELECT (COALESCE(SUM(amount), 0) / target_amount) * 100
+              FROM goal_contributions
+              WHERE goal_id = NEW.goal_id) >= 100 THEN 'completed'
+        ELSE 'in_progress'
+    END,
+    updated_at = CURRENT_TIMESTAMP
+    WHERE goal_id = NEW.goal_id;
+END //
+
+CREATE TRIGGER after_contribution_delete
+AFTER DELETE ON goal_contributions
+FOR EACH ROW
+BEGIN
+    UPDATE goals 
+    SET current_amount = (
+        SELECT COALESCE(SUM(amount), 0)
+        FROM goal_contributions
+        WHERE goal_id = OLD.goal_id
+    ),
+    progress_percentage = (
+        SELECT (COALESCE(SUM(amount), 0) / target_amount) * 100
+        FROM goal_contributions
+        WHERE goal_id = OLD.goal_id
+    ),
+    status = CASE 
+        WHEN (SELECT COALESCE(SUM(amount), 0)
+              FROM goal_contributions
+              WHERE goal_id = OLD.goal_id) = 0 THEN 'pending'
+        WHEN (SELECT (COALESCE(SUM(amount), 0) / target_amount) * 100
+              FROM goal_contributions
+              WHERE goal_id = OLD.goal_id) >= 100 THEN 'completed'
+        ELSE 'in_progress'
+    END,
+    updated_at = CURRENT_TIMESTAMP
+    WHERE goal_id = OLD.goal_id;
+END //
+
+DELIMITER ;
