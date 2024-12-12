@@ -30,15 +30,19 @@ exports.getGoals = async (req, res) => {
   const { user_id } = req.params;
   const query = `
     SELECT 
-      g.*,
-      DATEDIFF(g.target_date, CURDATE()) as days_remaining,
-      CASE 
-        WHEN g.status = 'completed' THEN 100
-        ELSE COALESCE(g.progress_percentage, 0)
-      END as progress
-    FROM goals g
-    WHERE g.user_id = ?
-    ORDER BY g.created_at DESC
+      goal_id,
+      user_id,
+      title,
+      target_amount,
+      current_amount,
+      target_date,
+      created_at,
+      updated_at,
+      DATEDIFF(target_date, CURDATE()) as days_remaining,
+      (current_amount / target_amount * 100) as progress_percentage
+    FROM goals
+    WHERE user_id = ?
+    ORDER BY created_at DESC
   `;
 
   try {
@@ -46,7 +50,7 @@ exports.getGoals = async (req, res) => {
     res.json({ success: true, data: results });
   } catch (err) {
     console.error("Error fetching goals:", err);
-    res.status(500).json({ success: false, message: "Internal server error" });
+    res.status(500).json({ success: false, message: err.message || "Internal server error" });
   }
 };
 
