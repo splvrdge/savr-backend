@@ -51,14 +51,53 @@ exports.updateExpense = async (req, res) => {
 
 exports.deleteExpense = async (req, res) => {
   const { expense_id } = req.params;
-  const query = `DELETE FROM expenses WHERE expense_id = ?`;
+  
+  // First, get the amount to update the summary
+  const getAmountQuery = `
+    SELECT amount, user_id FROM user_financial_data 
+    WHERE id = ? AND type = 'expense'
+  `;
+  
+  const deleteExpenseQuery = `
+    DELETE FROM user_financial_data 
+    WHERE id = ? AND type = 'expense'
+  `;
 
+  const updateSummaryQuery = `
+    UPDATE user_financial_summary 
+    SET 
+      current_balance = current_balance + ?,
+      total_expenses = total_expenses - ?,
+      last_updated = NOW()
+    WHERE user_id = ?
+  `;
+
+  const connection = await db.getConnection();
   try {
-    await db.execute(query, [expense_id]);
+    await connection.beginTransaction();
+
+    // Get the amount and user_id
+    const [amountResult] = await connection.execute(getAmountQuery, [expense_id]);
+    if (!amountResult.length) {
+      await connection.rollback();
+      return res.status(404).json({ success: false, message: "Expense not found" });
+    }
+    const { amount, user_id } = amountResult[0];
+
+    // Delete the expense
+    await connection.execute(deleteExpenseQuery, [expense_id]);
+
+    // Update the summary
+    await connection.execute(updateSummaryQuery, [amount, amount, user_id]);
+
+    await connection.commit();
     res.json({ success: true, message: "Expense deleted successfully" });
   } catch (err) {
+    await connection.rollback();
     console.error("Error deleting expense:", err);
     res.status(500).json({ success: false, message: "Internal server error" });
+  } finally {
+    connection.release();
   }
 };
 
