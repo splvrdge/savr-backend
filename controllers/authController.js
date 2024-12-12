@@ -176,24 +176,24 @@ exports.logout = async (req, res) => {
     console.error("Error logging out:", err);
     res.status(500).json({ success: false, message: "Internal server error" });
   }
+};
 
-  exports.checkEmail = async (req, res) => {
-    const { user_email } = req.body;
+exports.checkEmail = async (req, res) => {
+  const { user_email } = req.body;
 
-    try {
-      const query = `SELECT * FROM users WHERE user_email = ?`;
-      const [results] = await db.execute(query, [user_email]);
+  try {
+    const query = `SELECT * FROM users WHERE user_email = ?`;
+    const [results] = await db.execute(query, [user_email]);
 
-      if (results.length > 0) {
-        res.json({ success: false, message: "Email is already taken" });
-      } else {
-        res.json({ success: true, message: "Email is available" });
-      }
-    } catch (err) {
-      console.error("Error checking email:", err);
-      res
-        .status(500)
-        .json({ success: false, message: "Internal server error" });
+    if (results.length > 0) {
+      res.json({ success: false, message: "Email is already taken" });
+    } else {
+      res.json({ success: true, message: "Email is available" });
     }
-  };
+  } catch (err) {
+    console.error("Error checking email:", err);
+    res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
 };
