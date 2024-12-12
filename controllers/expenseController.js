@@ -2,34 +2,37 @@ const db = require("../config/db");
 
 exports.addExpense = async (req, res) => {
   const { user_id, amount, description, category } = req.body;
+  const timestamp = new Date().toISOString().slice(0, 19).replace('T', ' ');
 
-  const insertExpenseQuery = `
-    INSERT INTO expenses (user_id, type, amount, timestamp)
-    VALUES (?, 'expense', ?, NOW())
-  `;
-
-  const updateFinancialSummaryQuery = `
-    INSERT INTO user_financial_summary (user_id, current_balance, net_savings, total_expenses, last_updated)
-    VALUES (?, ?, 0, ?, NOW())
-    ON DUPLICATE KEY UPDATE
-      current_balance = current_balance - ?, total_expenses = total_expenses + ?, last_updated = NOW()
-  `;
-
+  const connection = await db.getConnection();
   try {
-    await db.execute(insertExpenseQuery, [user_id, amount]);
-    await db.execute(updateFinancialSummaryQuery, [
-      user_id,
-      -amount,
-      amount,
-      amount,
-      amount,
-    ]);
-    res
-      .status(201)
-      .json({ success: true, message: "Expense added successfully" });
+    await connection.beginTransaction();
+
+    // Insert into user_financial_data
+    const insertQuery = `
+      INSERT INTO user_financial_data (user_id, amount, description, category, type, timestamp)
+      VALUES (?, ?, ?, ?, 'expense', ?)
+    `;
+    await connection.execute(insertQuery, [user_id, amount, description, category, timestamp]);
+
+    // Update financial summary
+    const updateSummaryQuery = `
+      INSERT INTO user_financial_summary (user_id, current_balance, total_expenses)
+      VALUES (?, -?, ?)
+      ON DUPLICATE KEY UPDATE
+      current_balance = current_balance - ?,
+      total_expenses = total_expenses + ?
+    `;
+    await connection.execute(updateSummaryQuery, [user_id, amount, amount, amount, amount]);
+
+    await connection.commit();
+    res.status(201).json({ success: true, message: "Expense added successfully" });
   } catch (err) {
+    await connection.rollback();
     console.error("Error adding expense:", err);
     res.status(500).json({ success: false, message: "Internal server error" });
+  } finally {
+    connection.release();
   }
 };
 
@@ -61,12 +64,36 @@ exports.deleteExpense = async (req, res) => {
 
 exports.getExpenses = async (req, res) => {
   const { user_id } = req.params;
-
-  const query = `SELECT * FROM expenses WHERE user_id = ?`;
+  const query = `
+    SELECT 
+      id,
+      amount,
+      description,
+      category,
+      timestamp,
+      type
+    FROM user_financial_data 
+    WHERE user_id = ? AND type = 'expense'
+    ORDER BY timestamp DESC
+  `;
 
   try {
     const [results] = await db.execute(query, [user_id]);
-    res.json({ success: true, data: results });
+    
+    // Map the results to match the frontend's expected format
+    const formattedResults = results.map(item => ({
+      id: item.id,
+      amount: parseFloat(item.amount),
+      description: item.description || '',
+      category: item.category || 'Other',
+      timestamp: item.timestamp,
+      type: item.type
+    }));
+    
+    res.json({ 
+      success: true, 
+      data: formattedResults 
+    });
   } catch (err) {
     console.error("Error fetching expenses:", err);
     res.status(500).json({ success: false, message: "Internal server error" });
