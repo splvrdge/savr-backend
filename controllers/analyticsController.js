@@ -127,3 +127,49 @@ exports.getMonthlyTrends = async (req, res) => {
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 };
+
+exports.getDailyContributions = async (req, res) => {
+  const { user_id } = req.params;
+  const { timeframe = 'year' } = req.query;
+
+  let dateFilter = '';
+  switch (timeframe) {
+    case 'week':
+      dateFilter = 'AND timestamp >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)';
+      break;
+    case 'month':
+      dateFilter = 'AND timestamp >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)';
+      break;
+    case 'year':
+      dateFilter = 'AND timestamp >= DATE_SUB(CURDATE(), INTERVAL 1 YEAR)';
+      break;
+    default:
+      dateFilter = 'AND timestamp >= DATE_SUB(CURDATE(), INTERVAL 1 YEAR)';
+  }
+  
+  const query = `
+    SELECT 
+      DATE(timestamp) as date,
+      SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END) as total_income,
+      SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END) as total_expense
+    FROM (
+      SELECT timestamp, amount, 'income' as type
+      FROM incomes
+      WHERE user_id = ? ${dateFilter}
+      UNION ALL
+      SELECT timestamp, amount, 'expense' as type
+      FROM expenses
+      WHERE user_id = ? ${dateFilter}
+    ) combined
+    GROUP BY DATE(timestamp)
+    ORDER BY date ASC
+  `;
+
+  try {
+    const [results] = await db.execute(query, [user_id, user_id]);
+    res.json({ success: true, data: results });
+  } catch (err) {
+    console.error("Error fetching daily contributions:", err);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
