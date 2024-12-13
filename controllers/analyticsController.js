@@ -2,22 +2,23 @@ const db = require("../config/db");
 
 exports.getExpensesByCategory = async (req, res) => {
   const { user_id } = req.params;
-  const { timeframe } = req.query;
+  const { timeframe, date, year } = req.query;
 
   try {
     let dateFilter = '';
-    switch (timeframe) {
-      case 'week':
-        dateFilter = 'AND e.timestamp >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)';
-        break;
-      case 'month':
-        dateFilter = 'AND e.timestamp >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)';
-        break;
-      case 'year':
-        dateFilter = 'AND e.timestamp >= DATE_SUB(CURDATE(), INTERVAL 1 YEAR)';
-        break;
-      default:
-        dateFilter = 'AND e.timestamp >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)';
+    let params = [user_id];
+
+    if (timeframe === 'week' && date) {
+      dateFilter = `AND DATE(e.timestamp) = DATE(?)`;
+      params.push(date);
+    } else if (timeframe === 'month' && date) {
+      dateFilter = `AND DATE_FORMAT(e.timestamp, '%Y-%m') = ?`;
+      params.push(date);
+    } else if (timeframe === 'year' && year) {
+      dateFilter = `AND YEAR(e.timestamp) = ?`;
+      params.push(year);
+    } else {
+      dateFilter = 'AND e.timestamp >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)';
     }
 
     const query = `
@@ -36,7 +37,10 @@ exports.getExpensesByCategory = async (req, res) => {
       ORDER BY total_amount DESC
     `;
 
-    const [results] = await db.execute(query, [user_id, user_id]);
+    // Add the parameters for the subquery and main query
+    params = [...params, ...params];
+
+    const [results] = await db.execute(query, params);
     
     const formattedData = results.map(item => ({
       ...item,
@@ -52,29 +56,31 @@ exports.getExpensesByCategory = async (req, res) => {
     console.error('Error in getExpensesByCategory:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to fetch expense analytics'
+      message: 'Failed to fetch expense analytics',
+      error: error.message
     });
   }
 };
 
 exports.getIncomeByCategory = async (req, res) => {
   const { user_id } = req.params;
-  const { timeframe } = req.query;
+  const { timeframe, date, year } = req.query;
 
   try {
     let dateFilter = '';
-    switch (timeframe) {
-      case 'week':
-        dateFilter = 'AND i.timestamp >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)';
-        break;
-      case 'month':
-        dateFilter = 'AND i.timestamp >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)';
-        break;
-      case 'year':
-        dateFilter = 'AND i.timestamp >= DATE_SUB(CURDATE(), INTERVAL 1 YEAR)';
-        break;
-      default:
-        dateFilter = 'AND i.timestamp >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)';
+    let params = [user_id];
+
+    if (timeframe === 'week' && date) {
+      dateFilter = `AND DATE(i.timestamp) = DATE(?)`;
+      params.push(date);
+    } else if (timeframe === 'month' && date) {
+      dateFilter = `AND DATE_FORMAT(i.timestamp, '%Y-%m') = ?`;
+      params.push(date);
+    } else if (timeframe === 'year' && year) {
+      dateFilter = `AND YEAR(i.timestamp) = ?`;
+      params.push(year);
+    } else {
+      dateFilter = 'AND i.timestamp >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)';
     }
 
     const query = `
@@ -93,7 +99,10 @@ exports.getIncomeByCategory = async (req, res) => {
       ORDER BY total_amount DESC
     `;
 
-    const [results] = await db.execute(query, [user_id, user_id]);
+    // Add the parameters for the subquery and main query
+    params = [...params, ...params];
+
+    const [results] = await db.execute(query, params);
     
     const formattedData = results.map(item => ({
       ...item,
@@ -109,7 +118,8 @@ exports.getIncomeByCategory = async (req, res) => {
     console.error('Error in getIncomeByCategory:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to fetch income analytics'
+      message: 'Failed to fetch income analytics',
+      error: error.message
     });
   }
 };
@@ -178,7 +188,8 @@ exports.getMonthlyTrends = async (req, res) => {
     console.error('Error in getMonthlyTrends:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to fetch monthly trends'
+      message: 'Failed to fetch monthly trends',
+      error: error.message
     });
   }
 };
