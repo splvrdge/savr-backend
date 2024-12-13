@@ -9,17 +9,17 @@ const handleValidationErrors = (req, res, next) => {
 };
 
 const incomeValidationRules = [
+  body('user_id').isInt().withMessage('User ID must be an integer'),
   body('amount').isFloat({ min: 0 }).withMessage('Amount must be a positive number'),
   body('category').isString().notEmpty().withMessage('Category is required'),
   body('description').optional().isString(),
-  body('date').isISO8601().withMessage('Invalid date format'),
 ];
 
 const expenseValidationRules = [
+  body('user_id').isInt().withMessage('User ID must be an integer'),
   body('amount').isFloat({ min: 0 }).withMessage('Amount must be a positive number'),
   body('category').isString().notEmpty().withMessage('Category is required'),
   body('description').optional().isString(),
-  body('date').isISO8601().withMessage('Invalid date format'),
 ];
 
 const goalValidationRules = [

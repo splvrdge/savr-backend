@@ -4,6 +4,8 @@ exports.addIncome = async (req, res) => {
   const { user_id, amount, description, category } = req.body;
   const timestamp = new Date().toISOString().slice(0, 19).replace('T', ' ');
 
+  console.log('Adding income with data:', { user_id, amount, description, category, timestamp });
+
   const connection = await db.getConnection();
   try {
     await connection.beginTransaction();
@@ -23,6 +25,8 @@ exports.addIncome = async (req, res) => {
     ]);
     const income_id = incomeResult.insertId;
 
+    console.log('Income inserted with ID:', income_id);
+
     const insertDataQuery = `
       INSERT INTO user_financial_data (user_id, income_id, amount, description, category, type, timestamp)
       VALUES (?, ?, ?, ?, ?, 'income', ?)
@@ -35,6 +39,8 @@ exports.addIncome = async (req, res) => {
       category,
       timestamp
     ]);
+
+    console.log('Financial data inserted');
 
     const updateSummaryQuery = `
       INSERT INTO user_financial_summary (
@@ -63,12 +69,29 @@ exports.addIncome = async (req, res) => {
       timestamp
     ]);
 
+    console.log('Financial summary updated');
+
     await connection.commit();
-    res.status(201).json({ success: true, message: "Income added successfully" });
+    res.status(201).json({ 
+      success: true, 
+      message: "Income added successfully",
+      data: {
+        income_id,
+        user_id,
+        amount,
+        description,
+        category,
+        timestamp
+      }
+    });
   } catch (err) {
     await connection.rollback();
     console.error("Error adding income:", err);
-    res.status(500).json({ success: false, message: "Internal server error" });
+    res.status(500).json({ 
+      success: false, 
+      message: "Failed to add income", 
+      error: err.message 
+    });
   } finally {
     connection.release();
   }
@@ -76,6 +99,8 @@ exports.addIncome = async (req, res) => {
 
 exports.getIncomes = async (req, res) => {
   const { user_id } = req.params;
+  console.log('Fetching incomes for user:', user_id);
+
   const query = `
     SELECT 
       i.income_id as id,
@@ -95,6 +120,8 @@ exports.getIncomes = async (req, res) => {
   try {
     const [results] = await db.execute(query, [user_id]);
     
+    console.log('Incomes fetched:', results.length);
+
     const formattedResults = results.map(item => ({
       id: item.id,
       amount: parseFloat(item.amount),
@@ -112,13 +139,18 @@ exports.getIncomes = async (req, res) => {
     });
   } catch (err) {
     console.error("Error fetching incomes:", err);
-    res.status(500).json({ success: false, message: "Internal server error" });
+    res.status(500).json({ 
+      success: false, 
+      message: "Failed to fetch incomes", 
+      error: err.message 
+    });
   }
 };
 
 exports.updateIncome = async (req, res) => {
   const { income_id, amount, description, category, user_id } = req.body;
-  
+  console.log('Updating income with ID:', income_id);
+
   const connection = await db.getConnection();
   try {
     await connection.beginTransaction();
@@ -130,9 +162,15 @@ exports.updateIncome = async (req, res) => {
     const [oldAmountResult] = await connection.execute(getOldAmountQuery, [income_id]);
     if (!oldAmountResult.length) {
       await connection.rollback();
-      return res.status(404).json({ success: false, message: "Income not found" });
+      console.log('Income not found:', income_id);
+      return res.status(404).json({ 
+        success: false, 
+        message: "Income not found" 
+      });
     }
     const oldAmount = oldAmountResult[0].amount;
+
+    console.log('Old amount:', oldAmount);
 
     const updateIncomeQuery = `
       UPDATE incomes 
@@ -141,12 +179,16 @@ exports.updateIncome = async (req, res) => {
     `;
     await connection.execute(updateIncomeQuery, [amount, description, category, income_id]);
 
+    console.log('Income updated');
+
     const updateDataQuery = `
       UPDATE user_financial_data 
       SET amount = ?, description = ?, category = ? 
       WHERE income_id = ?
     `;
     await connection.execute(updateDataQuery, [amount, description, category, income_id]);
+
+    console.log('Financial data updated');
 
     const updateSummaryQuery = `
       UPDATE user_financial_summary 
@@ -159,12 +201,21 @@ exports.updateIncome = async (req, res) => {
     `;
     await connection.execute(updateSummaryQuery, [oldAmount, amount, oldAmount, amount, oldAmount, amount, user_id]);
 
+    console.log('Financial summary updated');
+
     await connection.commit();
-    res.json({ success: true, message: "Income updated successfully" });
+    res.json({ 
+      success: true, 
+      message: "Income updated successfully" 
+    });
   } catch (err) {
     await connection.rollback();
     console.error("Error updating income:", err);
-    res.status(500).json({ success: false, message: "Internal server error" });
+    res.status(500).json({ 
+      success: false, 
+      message: "Failed to update income", 
+      error: err.message 
+    });
   } finally {
     connection.release();
   }
@@ -172,7 +223,8 @@ exports.updateIncome = async (req, res) => {
 
 exports.deleteIncome = async (req, res) => {
   const { income_id } = req.params;
-  
+  console.log('Deleting income with ID:', income_id);
+
   const connection = await db.getConnection();
   try {
     await connection.beginTransaction();
@@ -185,10 +237,16 @@ exports.deleteIncome = async (req, res) => {
     
     if (!incomeResult.length) {
       await connection.rollback();
-      return res.status(404).json({ success: false, message: "Income not found" });
+      console.log('Income not found:', income_id);
+      return res.status(404).json({ 
+        success: false, 
+        message: "Income not found" 
+      });
     }
 
     const { amount, user_id } = incomeResult[0];
+
+    console.log('Income found:', income_id);
 
     const deleteDataQuery = `
       DELETE FROM user_financial_data 
@@ -196,11 +254,15 @@ exports.deleteIncome = async (req, res) => {
     `;
     await connection.execute(deleteDataQuery, [income_id]);
 
+    console.log('Financial data deleted');
+
     const deleteIncomeQuery = `
       DELETE FROM incomes 
       WHERE income_id = ?
     `;
     await connection.execute(deleteIncomeQuery, [income_id]);
+
+    console.log('Income deleted');
 
     const updateSummaryQuery = `
       UPDATE user_financial_summary 
@@ -213,12 +275,21 @@ exports.deleteIncome = async (req, res) => {
     `;
     await connection.execute(updateSummaryQuery, [amount, amount, amount, user_id]);
 
+    console.log('Financial summary updated');
+
     await connection.commit();
-    res.json({ success: true, message: "Income deleted successfully" });
+    res.json({ 
+      success: true, 
+      message: "Income deleted successfully" 
+    });
   } catch (err) {
     await connection.rollback();
     console.error("Error deleting income:", err);
-    res.status(500).json({ success: false, message: "Internal server error" });
+    res.status(500).json({ 
+      success: false, 
+      message: "Failed to delete income", 
+      error: err.message 
+    });
   } finally {
     connection.release();
   }
