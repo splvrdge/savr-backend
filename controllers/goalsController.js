@@ -28,18 +28,26 @@ exports.addGoal = async (req, res) => {
 
 exports.getGoals = async (req, res) => {
   const { user_id } = req.params;
+  
+  if (!user_id) {
+    return res.status(400).json({ 
+      success: false, 
+      message: "User ID is required" 
+    });
+  }
+
   const query = `
     SELECT 
       goal_id,
       user_id,
       title,
       target_amount,
-      current_amount,
+      COALESCE(current_amount, 0) as current_amount,
       target_date,
       created_at,
       updated_at,
       DATEDIFF(target_date, CURDATE()) as days_remaining,
-      (current_amount / target_amount * 100) as progress_percentage
+      COALESCE((current_amount / target_amount * 100), 0) as progress_percentage
     FROM goals
     WHERE user_id = ?
     ORDER BY created_at DESC
@@ -47,10 +55,17 @@ exports.getGoals = async (req, res) => {
 
   try {
     const [results] = await db.execute(query, [user_id]);
-    res.json({ success: true, data: results });
+    res.json({ 
+      success: true, 
+      data: results || [] 
+    });
   } catch (err) {
     console.error("Error fetching goals:", err);
-    res.status(500).json({ success: false, message: err.message || "Internal server error" });
+    res.status(500).json({ 
+      success: false, 
+      message: "Failed to fetch goals",
+      error: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
   }
 };
 

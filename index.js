@@ -13,6 +13,8 @@ const cron = require("node-cron");
 const db = require("./config/db");
 
 const app = express();
+app.set('trust proxy', 1);
+
 const SERVER_PORT = process.env.SERVER_PORT || 3000;
 
 const limiter = rateLimit({
@@ -25,6 +27,7 @@ app.use(limiter);
 app.use(bodyParser.json());
 
 const allowedOrigins = [
+  'https://savr-fintracker.vercel.app',
   'https://savr-backend.onrender.com',
   'http://localhost:3000',
   'http://localhost:5173'
@@ -39,7 +42,8 @@ app.use(cors({
     }
   },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
 }));
 
 app.use((req, res, next) => {

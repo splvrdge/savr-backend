@@ -2,28 +2,33 @@ const db = require("../config/db");
 
 exports.getExpensesByCategory = async (req, res) => {
   const { user_id } = req.params;
-  const { timeframe } = req.query; // 'week', 'month', 'year'
+  const { timeframe } = req.query;
 
   let dateFilter = '';
   switch (timeframe) {
     case 'week':
-      dateFilter = 'AND timestamp >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)';
+      dateFilter = 'AND date >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)';
       break;
     case 'month':
-      dateFilter = 'AND timestamp >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)';
+      dateFilter = 'AND date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)';
       break;
     case 'year':
-      dateFilter = 'AND timestamp >= DATE_SUB(CURDATE(), INTERVAL 1 YEAR)';
+      dateFilter = 'AND date >= DATE_SUB(CURDATE(), INTERVAL 1 YEAR)';
       break;
     default:
-      dateFilter = 'AND timestamp >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)';
+      dateFilter = 'AND date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)';
   }
 
   const query = `
     SELECT 
       category,
       SUM(amount) as total_amount,
-      COUNT(*) as transaction_count
+      COUNT(*) as transaction_count,
+      ROUND((SUM(amount) / (
+        SELECT SUM(amount) 
+        FROM expenses 
+        WHERE user_id = ? ${dateFilter}
+      )) * 100, 2) as percentage
     FROM expenses
     WHERE user_id = ? ${dateFilter}
     GROUP BY category
@@ -31,11 +36,26 @@ exports.getExpensesByCategory = async (req, res) => {
   `;
 
   try {
-    const [results] = await db.execute(query, [user_id]);
-    res.json({ success: true, data: results });
+    const [results] = await db.execute(query, [user_id, user_id]);
+    
+    const formattedData = results.map(item => ({
+      ...item,
+      total_amount: parseFloat(item.total_amount),
+      percentage: parseFloat(item.percentage) || 0
+    }));
+
+    res.json({ 
+      success: true, 
+      data: formattedData,
+      total: formattedData.reduce((sum, item) => sum + item.total_amount, 0)
+    });
   } catch (err) {
     console.error("Error fetching expense analytics:", err);
-    res.status(500).json({ success: false, message: "Internal server error" });
+    res.status(500).json({ 
+      success: false, 
+      message: "Failed to fetch expense analytics",
+      error: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
   }
 };
 
