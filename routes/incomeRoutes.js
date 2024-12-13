@@ -1,22 +1,22 @@
 const express = require("express");
 const router = express.Router();
 const incomeController = require("../controllers/incomeController");
-const authMiddleware = require("../middlewares/authMiddleware");
+const { authenticateToken } = require("../middlewares/authMiddleware");
 
-router.post("/add", authMiddleware.verifyToken, incomeController.addIncome);
+router.post("/add", authenticateToken, incomeController.addIncome);
 router.get(
   "/:user_id",
-  authMiddleware.verifyToken,
+  authenticateToken,
   incomeController.getIncomes
 );
 router.put(
   "/update",
-  authMiddleware.verifyToken,
+  authenticateToken,
   incomeController.updateIncome
 );
 router.delete(
   "/delete/:income_id",
-  authMiddleware.verifyToken,
+  authenticateToken,
   incomeController.deleteIncome
 );
 

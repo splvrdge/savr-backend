@@ -5,7 +5,7 @@ const authRoutes = require("./routes/authRoutes");
 const userRoutes = require("./routes/userRoutes");
 const incomeRoutes = require("./routes/incomeRoutes");
 const expenseRoutes = require("./routes/expenseRoutes");
-const goalRoutes = require("./routes/goalsRoutes");
+const goalsRoutes = require("./routes/goalsRoutes");
 const financialRoutes = require("./routes/financialRoutes");
 const analyticsRoutes = require("./routes/analyticsRoutes");
 
@@ -26,7 +26,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/user", userRoutes);
 app.use("/api/income", incomeRoutes);
 app.use("/api/expense", expenseRoutes);
-app.use("/api/goal", goalRoutes);
+app.use("/api/goals", goalsRoutes);
 app.use("/api/financial", financialRoutes);
 app.use("/api/analytics", analyticsRoutes);
 
