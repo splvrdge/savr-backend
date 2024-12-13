@@ -63,7 +63,7 @@ exports.getIncomeByCategory = async (req, res) => {
       category,
       SUM(amount) as total_amount,
       COUNT(*) as transaction_count
-    FROM income
+    FROM incomes
     WHERE user_id = ? ${dateFilter}
     GROUP BY category
     ORDER BY total_amount DESC
@@ -97,30 +97,31 @@ exports.getMonthlyTrends = async (req, res) => {
       'income' as type,
       DATE_FORMAT(timestamp, '%Y-%m') as month,
       SUM(amount) as total_amount
-    FROM income
+    FROM incomes
     WHERE user_id = ?
     AND timestamp >= DATE_SUB(CURDATE(), INTERVAL 12 MONTH)
     GROUP BY DATE_FORMAT(timestamp, '%Y-%m')
-    
-    ORDER BY month, type
+    ORDER BY month ASC
   `;
 
   try {
     const [results] = await db.execute(query, [user_id, user_id]);
     
-    // Organize data by month
+    // Transform the data into the required format
     const monthlyData = {};
     results.forEach(row => {
       if (!monthlyData[row.month]) {
         monthlyData[row.month] = { month: row.month, income: 0, expense: 0 };
       }
-      monthlyData[row.month][row.type] = row.total_amount;
+      if (row.type === 'income') {
+        monthlyData[row.month].income = row.total_amount;
+      } else {
+        monthlyData[row.month].expense = row.total_amount;
+      }
     });
 
-    res.json({ 
-      success: true, 
-      data: Object.values(monthlyData)
-    });
+    const formattedData = Object.values(monthlyData);
+    res.json({ success: true, data: formattedData });
   } catch (err) {
     console.error("Error fetching monthly trends:", err);
     res.status(500).json({ success: false, message: "Internal server error" });
