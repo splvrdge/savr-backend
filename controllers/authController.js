@@ -267,3 +267,68 @@ exports.checkEmail = async (req, res) => {
       .json({ success: false, message: "Internal server error" });
   }
 };
+
+exports.refreshTokenController = async (req, res) => {
+  try {
+    const { refreshToken } = req.body;
+    
+    if (!refreshToken) {
+      return res.status(400).json({
+        success: false,
+        message: "Refresh token is required"
+      });
+    }
+
+    const decoded = jwt.verify(refreshToken, refreshTokenSecret);
+    const user = await db.execute(
+      "SELECT * FROM users WHERE user_id = ?",
+      [decoded.user_id]
+    );
+
+    if (user.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found"
+      });
+    }
+
+    const accessToken = jwt.sign(
+      { user_id: user[0].user_id },
+      secretKey,
+      { expiresIn: '15m' }
+    );
+
+    const newRefreshToken = jwt.sign(
+      { user_id: user[0].user_id },
+      refreshTokenSecret,
+      { expiresIn: '7d' }
+    );
+
+    res.json({
+      success: true,
+      accessToken,
+      refreshToken: newRefreshToken
+    });
+  } catch (error) {
+    console.error('Error in refreshToken:', error);
+    if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid or expired refresh token"
+      });
+    }
+    res.status(500).json({
+      success: false,
+      message: "Internal server error"
+    });
+  }
+};
+
+module.exports = {
+  login,
+  signup,
+  checkEmail,
+  refreshToken,
+  refreshTokenController,
+  logout
+};
