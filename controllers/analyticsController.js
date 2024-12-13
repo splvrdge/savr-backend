@@ -25,11 +25,11 @@ exports.getExpensesByCategory = async (req, res) => {
         e.category,
         SUM(e.amount) as total_amount,
         COUNT(*) as transaction_count,
-        ROUND((SUM(e.amount) / (
-          SELECT NULLIF(SUM(amount), 0)
+        ROUND((SUM(e.amount) / NULLIF((
+          SELECT SUM(amount)
           FROM expenses 
           WHERE user_id = ? ${dateFilter.replace('e.', '')}
-        )) * 100, 2) as percentage
+        ), 0)) * 100, 2) as percentage
       FROM expenses e
       WHERE e.user_id = ? ${dateFilter}
       GROUP BY e.category
@@ -89,11 +89,11 @@ exports.getIncomeByCategory = async (req, res) => {
         i.category,
         SUM(i.amount) as total_amount,
         COUNT(*) as transaction_count,
-        ROUND((SUM(i.amount) / (
-          SELECT NULLIF(SUM(amount), 0)
+        ROUND((SUM(i.amount) / NULLIF((
+          SELECT SUM(amount)
           FROM incomes 
           WHERE user_id = ? ${dateFilter.replace('i.', '')}
-        )) * 100, 2) as percentage
+        ), 0)) * 100, 2) as percentage
       FROM incomes i
       WHERE i.user_id = ? ${dateFilter}
       GROUP BY i.category
@@ -131,95 +131,114 @@ exports.getIncomeByCategory = async (req, res) => {
 exports.getMonthlyTrends = async (req, res) => {
   const { user_id } = req.params;
   
-  const query = `
-    SELECT 
-      'expense' as type,
-      DATE_FORMAT(timestamp, '%Y-%m') as month,
-      SUM(amount) as total_amount
-    FROM expenses
-    WHERE user_id = ? 
-    AND timestamp >= DATE_SUB(CURDATE(), INTERVAL 12 MONTH)
-    GROUP BY DATE_FORMAT(timestamp, '%Y-%m')
-    
-    UNION ALL
-    
-    SELECT 
-      'income' as type,
-      DATE_FORMAT(timestamp, '%Y-%m') as month,
-      SUM(amount) as total_amount
-    FROM incomes
-    WHERE user_id = ?
-    AND timestamp >= DATE_SUB(CURDATE(), INTERVAL 12 MONTH)
-    GROUP BY DATE_FORMAT(timestamp, '%Y-%m')
-    ORDER BY month ASC
-  `;
-
   try {
-    const [results] = await db.execute(query, [user_id, user_id]);
-    
-    // Transform the data into the required format
-    const monthlyData = {};
-    results.forEach(row => {
-      if (!monthlyData[row.month]) {
-        monthlyData[row.month] = { month: row.month, income: 0, expense: 0 };
-      }
-      if (row.type === 'income') {
-        monthlyData[row.month].income = row.total_amount;
-      } else {
-        monthlyData[row.month].expense = row.total_amount;
-      }
-    });
+    const query = `
+      SELECT 
+        DATE_FORMAT(date, '%Y-%m') as month,
+        SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END) as income,
+        SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END) as expense
+      FROM (
+        SELECT timestamp as date, amount, 'income' as type
+        FROM incomes
+        WHERE user_id = ? AND timestamp >= DATE_SUB(CURDATE(), INTERVAL 12 MONTH)
+        UNION ALL
+        SELECT timestamp as date, amount, 'expense' as type
+        FROM expenses
+        WHERE user_id = ? AND timestamp >= DATE_SUB(CURDATE(), INTERVAL 12 MONTH)
+      ) combined
+      GROUP BY DATE_FORMAT(date, '%Y-%m')
+      ORDER BY month ASC
+    `;
 
-    const formattedData = Object.values(monthlyData);
-    res.json({ success: true, data: formattedData });
+    console.log('Monthly Trends Query:', query);
+    console.log('User ID:', user_id);
+
+    const [results] = await db.execute(query, [user_id, user_id]);
+    res.json({ success: true, data: results });
   } catch (err) {
     console.error("Error fetching monthly trends:", err);
-    res.status(500).json({ success: false, message: "Internal server error" });
+    res.status(500).json({ 
+      success: false, 
+      message: "Failed to fetch monthly trends",
+      error: err.message
+    });
   }
 };
 
 exports.getDailyContributions = async (req, res) => {
   const { user_id } = req.params;
-  const { timeframe = 'year' } = req.query;
-
-  let dateFilter = '';
-  switch (timeframe) {
-    case 'week':
-      dateFilter = 'AND timestamp >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)';
-      break;
-    case 'month':
-      dateFilter = 'AND timestamp >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)';
-      break;
-    case 'year':
-      dateFilter = 'AND timestamp >= DATE_SUB(CURDATE(), INTERVAL 1 YEAR)';
-      break;
-    default:
-      dateFilter = 'AND timestamp >= DATE_SUB(CURDATE(), INTERVAL 1 YEAR)';
-  }
-  
-  const query = `
-    SELECT 
-      DATE(timestamp) as date,
-      SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END) as total_income,
-      SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END) as total_expense
-    FROM (
-      SELECT timestamp, amount, 'income' as type
-      FROM incomes
-      WHERE user_id = ? ${dateFilter}
-      UNION ALL
-      SELECT timestamp, amount, 'expense' as type
-      FROM expenses
-      WHERE user_id = ? ${dateFilter}
-    ) combined
-    GROUP BY DATE(timestamp)
-    ORDER BY date ASC
-  `;
+  const { timeframe = 'month' } = req.query;
 
   try {
-    const [results] = await db.execute(query, [user_id, user_id]);
-    res.json({ success: true, data: results });
+    let dateFilter = '';
+    switch (timeframe) {
+      case 'week':
+        dateFilter = 'AND timestamp >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)';
+        break;
+      case 'month':
+        dateFilter = 'AND timestamp >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)';
+        break;
+      case 'year':
+        dateFilter = 'AND timestamp >= DATE_SUB(CURDATE(), INTERVAL 1 YEAR)';
+        break;
+      default:
+        dateFilter = 'AND timestamp >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)';
+    }
+
+    const query = `
+      WITH RECURSIVE dates AS (
+        SELECT CURDATE() - INTERVAL 
+          CASE 
+            WHEN ? = 'week' THEN 7
+            WHEN ? = 'month' THEN 30
+            ELSE 365
+          END DAY as date
+        UNION ALL
+        SELECT date + INTERVAL 1 DAY
+        FROM dates
+        WHERE date < CURDATE()
+      )
+      SELECT 
+        dates.date,
+        COALESCE(SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END), 0) as total_income,
+        COALESCE(SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END), 0) as total_expense
+      FROM dates
+      LEFT JOIN (
+        SELECT DATE(timestamp) as trans_date, amount, 'income' as type
+        FROM incomes
+        WHERE user_id = ? ${dateFilter}
+        UNION ALL
+        SELECT DATE(timestamp) as trans_date, amount, 'expense' as type
+        FROM expenses
+        WHERE user_id = ? ${dateFilter}
+      ) transactions ON dates.date = transactions.trans_date
+      GROUP BY dates.date
+      ORDER BY dates.date ASC
+    `;
+
+    console.log('Daily Activity Query:', query);
+    console.log('User ID:', user_id);
+    console.log('Timeframe:', timeframe);
+
+    const [results] = await db.execute(query, [timeframe, timeframe, user_id, user_id]);
+    
+    const formattedResults = results.map(row => ({
+      ...row,
+      date: row.date.toISOString().split('T')[0],
+      total_income: parseFloat(row.total_income) || 0,
+      total_expense: parseFloat(row.total_expense) || 0
+    }));
+
+    res.json({ 
+      success: true, 
+      data: formattedResults
+    });
   } catch (err) {
-    console.error("Error fetching daily contributions:", err);
-    res.status(500).json({ success: false, message: "Internal server error" });
+    console.error("Error fetching daily activity:", err);
+    res.status(500).json({ 
+      success: false, 
+      message: "Failed to fetch daily activity",
+      error: err.message
+    });
   }
 };
