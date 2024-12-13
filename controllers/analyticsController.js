@@ -8,16 +8,16 @@ exports.getExpensesByCategory = async (req, res) => {
     let dateFilter = '';
     switch (timeframe) {
       case 'week':
-        dateFilter = 'AND e.date >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)';
+        dateFilter = 'AND e.timestamp >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)';
         break;
       case 'month':
-        dateFilter = 'AND e.date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)';
+        dateFilter = 'AND e.timestamp >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)';
         break;
       case 'year':
-        dateFilter = 'AND e.date >= DATE_SUB(CURDATE(), INTERVAL 1 YEAR)';
+        dateFilter = 'AND e.timestamp >= DATE_SUB(CURDATE(), INTERVAL 1 YEAR)';
         break;
       default:
-        dateFilter = 'AND e.date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)';
+        dateFilter = 'AND e.timestamp >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)';
     }
 
     const query = `
@@ -28,7 +28,7 @@ exports.getExpensesByCategory = async (req, res) => {
         ROUND((SUM(e.amount) / (
           SELECT NULLIF(SUM(amount), 0)
           FROM expenses 
-          WHERE user_id = ?
+          WHERE user_id = ? ${dateFilter.replace('e.', '')}
         )) * 100, 2) as percentage
       FROM expenses e
       WHERE e.user_id = ? ${dateFilter}
@@ -36,7 +36,7 @@ exports.getExpensesByCategory = async (req, res) => {
       ORDER BY total_amount DESC
     `;
 
-    console.log('Analytics Query:', query);
+    console.log('Expense Analytics Query:', query);
     console.log('User ID:', user_id);
 
     const [results] = await db.execute(query, [user_id, user_id]);
@@ -68,38 +68,63 @@ exports.getIncomeByCategory = async (req, res) => {
   const { user_id } = req.params;
   const { timeframe } = req.query;
 
-  let dateFilter = '';
-  switch (timeframe) {
-    case 'week':
-      dateFilter = 'AND timestamp >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)';
-      break;
-    case 'month':
-      dateFilter = 'AND timestamp >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)';
-      break;
-    case 'year':
-      dateFilter = 'AND timestamp >= DATE_SUB(CURDATE(), INTERVAL 1 YEAR)';
-      break;
-    default:
-      dateFilter = 'AND timestamp >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)';
-  }
-
-  const query = `
-    SELECT 
-      category,
-      SUM(amount) as total_amount,
-      COUNT(*) as transaction_count
-    FROM incomes
-    WHERE user_id = ? ${dateFilter}
-    GROUP BY category
-    ORDER BY total_amount DESC
-  `;
-
   try {
-    const [results] = await db.execute(query, [user_id]);
-    res.json({ success: true, data: results });
+    let dateFilter = '';
+    switch (timeframe) {
+      case 'week':
+        dateFilter = 'AND i.timestamp >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)';
+        break;
+      case 'month':
+        dateFilter = 'AND i.timestamp >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)';
+        break;
+      case 'year':
+        dateFilter = 'AND i.timestamp >= DATE_SUB(CURDATE(), INTERVAL 1 YEAR)';
+        break;
+      default:
+        dateFilter = 'AND i.timestamp >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)';
+    }
+
+    const query = `
+      SELECT 
+        i.category,
+        SUM(i.amount) as total_amount,
+        COUNT(*) as transaction_count,
+        ROUND((SUM(i.amount) / (
+          SELECT NULLIF(SUM(amount), 0)
+          FROM incomes 
+          WHERE user_id = ? ${dateFilter.replace('i.', '')}
+        )) * 100, 2) as percentage
+      FROM incomes i
+      WHERE i.user_id = ? ${dateFilter}
+      GROUP BY i.category
+      ORDER BY total_amount DESC
+    `;
+
+    console.log('Income Analytics Query:', query);
+    console.log('User ID:', user_id);
+
+    const [results] = await db.execute(query, [user_id, user_id]);
+    
+    const formattedData = results.map(item => ({
+      ...item,
+      total_amount: parseFloat(item.total_amount) || 0,
+      percentage: parseFloat(item.percentage) || 0
+    }));
+
+    const total = formattedData.reduce((sum, item) => sum + item.total_amount, 0);
+
+    res.json({ 
+      success: true, 
+      data: formattedData,
+      total
+    });
   } catch (err) {
     console.error("Error fetching income analytics:", err);
-    res.status(500).json({ success: false, message: "Internal server error" });
+    res.status(500).json({ 
+      success: false, 
+      message: "Failed to fetch income analytics",
+      error: err.message
+    });
   }
 };
 
