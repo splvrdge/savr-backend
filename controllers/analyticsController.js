@@ -37,14 +37,13 @@ exports.getExpensesByCategory = async (req, res) => {
       ORDER BY total_amount DESC
     `;
 
-    // Add the parameters for the subquery and main query
     params = [...params, ...params];
-
     const [results] = await db.execute(query, params);
     
     const formattedData = results.map(item => ({
-      ...item,
+      category: item.category || 'Uncategorized',
       total_amount: parseFloat(item.total_amount) || 0,
+      transaction_count: parseInt(item.transaction_count) || 0,
       percentage: parseFloat(item.percentage) || 0
     }));
 
@@ -53,11 +52,10 @@ exports.getExpensesByCategory = async (req, res) => {
       data: formattedData
     });
   } catch (error) {
-    console.error('Error in getExpensesByCategory:', error);
+    console.error('Error fetching expense analytics:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to fetch expense analytics',
-      error: error.message
+      error: 'Failed to fetch expense analytics'
     });
   }
 };
@@ -90,23 +88,22 @@ exports.getIncomeByCategory = async (req, res) => {
         COUNT(*) as transaction_count,
         ROUND((SUM(i.amount) / NULLIF((
           SELECT SUM(amount)
-          FROM income 
+          FROM incomes 
           WHERE user_id = ? ${dateFilter.replace('i.', '')}
         ), 0)) * 100, 2) as percentage
-      FROM income i
+      FROM incomes i
       WHERE i.user_id = ? ${dateFilter}
       GROUP BY i.category
       ORDER BY total_amount DESC
     `;
 
-    // Add the parameters for the subquery and main query
     params = [...params, ...params];
-
     const [results] = await db.execute(query, params);
     
     const formattedData = results.map(item => ({
-      ...item,
+      category: item.category || 'Uncategorized',
       total_amount: parseFloat(item.total_amount) || 0,
+      transaction_count: parseInt(item.transaction_count) || 0,
       percentage: parseFloat(item.percentage) || 0
     }));
 
@@ -115,69 +112,44 @@ exports.getIncomeByCategory = async (req, res) => {
       data: formattedData
     });
   } catch (error) {
-    console.error('Error in getIncomeByCategory:', error);
+    console.error('Error fetching income analytics:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to fetch income analytics',
-      error: error.message
+      error: 'Failed to fetch income analytics'
     });
   }
 };
 
 exports.getMonthlyTrends = async (req, res) => {
   const { user_id } = req.params;
-  const { timeframe } = req.query;
+  const { year } = req.query;
 
   try {
-    let monthLimit;
-    switch (timeframe) {
-      case 'week':
-        monthLimit = 1;
-        break;
-      case 'month':
-        monthLimit = 3;
-        break;
-      case 'year':
-        monthLimit = 12;
-        break;
-      default:
-        monthLimit = 3;
-    }
-
+    const currentYear = year || new Date().getFullYear();
+    
     const query = `
       SELECT 
-        DATE_FORMAT(date, '%b') as month,
-        COALESCE(SUM(income), 0) as income,
-        COALESCE(SUM(expense), 0) as expense
-      FROM (
-        SELECT 
-          DATE(timestamp) as date,
-          SUM(amount) as income,
-          0 as expense
-        FROM income
-        WHERE user_id = ? 
-        AND timestamp >= DATE_SUB(CURDATE(), INTERVAL ? MONTH)
-        GROUP BY DATE(timestamp)
-        UNION ALL
-        SELECT 
-          DATE(timestamp) as date,
-          0 as income,
-          SUM(amount) as expense
-        FROM expenses
-        WHERE user_id = ?
-        AND timestamp >= DATE_SUB(CURDATE(), INTERVAL ? MONTH)
-        GROUP BY DATE(timestamp)
-      ) combined
-      GROUP BY month
-      ORDER BY MIN(date)
+        DATE_FORMAT(timestamp, '%Y-%m') as month,
+        SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END) as total_income,
+        SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END) as total_expenses,
+        COUNT(DISTINCT CASE WHEN type = 'income' THEN id END) as income_count,
+        COUNT(DISTINCT CASE WHEN type = 'expense' THEN id END) as expense_count
+      FROM user_financial_data
+      WHERE user_id = ? 
+      AND YEAR(timestamp) = ?
+      GROUP BY DATE_FORMAT(timestamp, '%Y-%m')
+      ORDER BY month ASC
     `;
 
-    const [results] = await db.execute(query, [user_id, monthLimit, user_id, monthLimit]);
+    const [results] = await db.execute(query, [user_id, currentYear]);
     
     const formattedData = results.map(item => ({
-      ...item,
-      income: parseFloat(item.income) || 0,
-      expense: parseFloat(item.expense) || 0
+      month: item.month,
+      total_income: parseFloat(item.total_income) || 0,
+      total_expenses: parseFloat(item.total_expenses) || 0,
+      income_count: parseInt(item.income_count) || 0,
+      expense_count: parseInt(item.expense_count) || 0,
+      net: parseFloat(item.total_income - item.total_expenses) || 0
     }));
 
     res.json({
@@ -185,11 +157,10 @@ exports.getMonthlyTrends = async (req, res) => {
       data: formattedData
     });
   } catch (error) {
-    console.error('Error in getMonthlyTrends:', error);
+    console.error('Error fetching monthly trends:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to fetch monthly trends',
-      error: error.message
+      error: 'Failed to fetch monthly trends'
     });
   }
 };
