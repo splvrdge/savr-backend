@@ -7,6 +7,5 @@ const { authenticateToken } = require('../middlewares/authMiddleware');
 router.get('/expenses/:user_id', authenticateToken, analyticsController.getExpensesByCategory);
 router.get('/income/:user_id', authenticateToken, analyticsController.getIncomeByCategory);
 router.get('/trends/:user_id', authenticateToken, analyticsController.getMonthlyTrends);
-router.get('/daily/:user_id', authenticateToken, analyticsController.getDailyContributions);
 
 module.exports = router;
