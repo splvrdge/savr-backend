@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const analyticsController = require('../controllers/analyticsController');
-const { authenticateToken } = require('../middleware/auth');
+const { authenticateToken } = require('../middlewares/authMiddleware');
 
 router.get('/expenses/:user_id', authenticateToken, analyticsController.getExpensesByCategory);
 router.get('/income/:user_id', authenticateToken, analyticsController.getIncomeByCategory);
