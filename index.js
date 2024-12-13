@@ -15,7 +15,7 @@ const db = require("./config/db");
 const app = express();
 app.set('trust proxy', 1);
 
-const SERVER_PORT = process.env.SERVER_PORT || 3000;
+const PORT = process.env.SERVER_PORT || 3000;
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -80,6 +80,6 @@ cron.schedule("0 0 * * *", async () => {
   }
 });
 
-app.listen(SERVER_PORT, () => {
-  console.log(`Server is running on port ${SERVER_PORT}`);
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
 });

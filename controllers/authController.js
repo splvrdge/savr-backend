@@ -325,7 +325,7 @@ exports.refreshTokenController = async (req, res) => {
 };
 
 module.exports = {
-  login,
+  login: exports.login,
   signup,
   checkEmail,
   refreshToken,
