@@ -45,15 +45,12 @@ exports.login = async (req, res) => {
         const accessToken = generateAccessToken(user);
         const refreshToken = generateRefreshToken(user);
 
-        // Calculate expiration date for refresh token
-        const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+        const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); 
 
-        // Begin transaction
         const connection = await db.getConnection();
         try {
           await connection.beginTransaction();
 
-          // Revoke old tokens
           const revokeOldTokensQuery = `
             UPDATE tokens 
             SET is_revoked = TRUE 
@@ -61,7 +58,6 @@ exports.login = async (req, res) => {
           `;
           await connection.execute(revokeOldTokensQuery, [user.user_id]);
 
-          // Insert new token
           const insertTokenQuery = `
             INSERT INTO tokens (user_id, refresh_token, expires_at)
             VALUES (?, ?, ?)
@@ -121,15 +117,12 @@ exports.signup = async (req, res) => {
     const accessToken = generateAccessToken(user);
     const refreshToken = generateRefreshToken(user);
 
-    // Calculate expiration date for refresh token
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); 
 
-    // Begin transaction
     const connection = await db.getConnection();
     try {
       await connection.beginTransaction();
 
-      // Insert new token
       const insertTokenQuery = `
         INSERT INTO tokens (user_id, refresh_token, expires_at)
         VALUES (?, ?, ?)
@@ -170,7 +163,6 @@ exports.refreshToken = async (req, res) => {
   }
 
   try {
-    // Check if token exists and is not revoked
     const [tokens] = await db.execute(
       `SELECT * FROM tokens WHERE refresh_token = ? AND is_revoked = FALSE AND expires_at > NOW()`,
       [refresh_token]
@@ -182,11 +174,9 @@ exports.refreshToken = async (req, res) => {
 
     const token = tokens[0];
 
-    // Verify the refresh token
     const decoded = jwt.verify(refresh_token, refreshTokenSecret);
     const user_id = decoded.user_id;
 
-    // Get user details
     const [users] = await db.execute(
       `SELECT * FROM users WHERE user_id = ?`,
       [user_id]
@@ -198,23 +188,19 @@ exports.refreshToken = async (req, res) => {
 
     const user = users[0];
 
-    // Generate new tokens
     const accessToken = generateAccessToken(user);
     const newRefreshToken = generateRefreshToken(user);
 
-    // Update the token in database
     const connection = await db.getConnection();
     try {
       await connection.beginTransaction();
 
-      // Revoke old token
       await connection.execute(
         `UPDATE tokens SET is_revoked = TRUE WHERE token_id = ?`,
         [token.token_id]
       );
 
-      // Insert new token
-      const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+      const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); 
       await connection.execute(
         `INSERT INTO tokens (user_id, refresh_token, expires_at) VALUES (?, ?, ?)`,
         [user_id, newRefreshToken, expiresAt]
@@ -250,7 +236,6 @@ exports.logout = async (req, res) => {
   }
 
   try {
-    // Revoke the refresh token
     await db.execute(
       `UPDATE tokens SET is_revoked = TRUE WHERE refresh_token = ?`,
       [refresh_token]

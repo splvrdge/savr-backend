@@ -8,7 +8,6 @@ exports.addIncome = async (req, res) => {
   try {
     await connection.beginTransaction();
 
-    // First insert into incomes table
     const insertIncomeQuery = `
       INSERT INTO incomes (user_id, amount, description, category, timestamp, created_at, updated_at)
       VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -24,7 +23,6 @@ exports.addIncome = async (req, res) => {
     ]);
     const income_id = incomeResult.insertId;
 
-    // Then insert into user_financial_data with the income_id reference
     const insertDataQuery = `
       INSERT INTO user_financial_data (user_id, income_id, amount, description, category, type, timestamp)
       VALUES (?, ?, ?, ?, ?, 'income', ?)
@@ -38,7 +36,6 @@ exports.addIncome = async (req, res) => {
       timestamp
     ]);
 
-    // Update financial summary with new fields
     const updateSummaryQuery = `
       INSERT INTO user_financial_summary (
         user_id, 
@@ -126,7 +123,6 @@ exports.updateIncome = async (req, res) => {
   try {
     await connection.beginTransaction();
 
-    // Get the old amount
     const getOldAmountQuery = `
       SELECT amount FROM incomes 
       WHERE income_id = ?
@@ -138,7 +134,6 @@ exports.updateIncome = async (req, res) => {
     }
     const oldAmount = oldAmountResult[0].amount;
 
-    // Update the income in both tables
     const updateIncomeQuery = `
       UPDATE incomes 
       SET amount = ?, description = ?, category = ?, updated_at = NOW() 
@@ -153,7 +148,6 @@ exports.updateIncome = async (req, res) => {
     `;
     await connection.execute(updateDataQuery, [amount, description, category, income_id]);
 
-    // Update the summary
     const updateSummaryQuery = `
       UPDATE user_financial_summary 
       SET 
@@ -183,7 +177,6 @@ exports.deleteIncome = async (req, res) => {
   try {
     await connection.beginTransaction();
 
-    // Get the amount and user_id for updating the summary
     const getIncomeQuery = `
       SELECT amount, user_id FROM incomes 
       WHERE income_id = ?
@@ -197,21 +190,18 @@ exports.deleteIncome = async (req, res) => {
 
     const { amount, user_id } = incomeResult[0];
 
-    // Delete from user_financial_data first (due to foreign key)
     const deleteDataQuery = `
       DELETE FROM user_financial_data 
       WHERE income_id = ?
     `;
     await connection.execute(deleteDataQuery, [income_id]);
 
-    // Delete from incomes
     const deleteIncomeQuery = `
       DELETE FROM incomes 
       WHERE income_id = ?
     `;
     await connection.execute(deleteIncomeQuery, [income_id]);
 
-    // Update the summary
     const updateSummaryQuery = `
       UPDATE user_financial_summary 
       SET 
