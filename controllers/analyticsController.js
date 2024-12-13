@@ -4,57 +4,62 @@ exports.getExpensesByCategory = async (req, res) => {
   const { user_id } = req.params;
   const { timeframe } = req.query;
 
-  let dateFilter = '';
-  switch (timeframe) {
-    case 'week':
-      dateFilter = 'AND date >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)';
-      break;
-    case 'month':
-      dateFilter = 'AND date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)';
-      break;
-    case 'year':
-      dateFilter = 'AND date >= DATE_SUB(CURDATE(), INTERVAL 1 YEAR)';
-      break;
-    default:
-      dateFilter = 'AND date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)';
-  }
-
-  const query = `
-    SELECT 
-      category,
-      SUM(amount) as total_amount,
-      COUNT(*) as transaction_count,
-      ROUND((SUM(amount) / (
-        SELECT SUM(amount) 
-        FROM expenses 
-        WHERE user_id = ? ${dateFilter}
-      )) * 100, 2) as percentage
-    FROM expenses
-    WHERE user_id = ? ${dateFilter}
-    GROUP BY category
-    ORDER BY total_amount DESC
-  `;
-
   try {
+    let dateFilter = '';
+    switch (timeframe) {
+      case 'week':
+        dateFilter = 'AND e.date >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)';
+        break;
+      case 'month':
+        dateFilter = 'AND e.date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)';
+        break;
+      case 'year':
+        dateFilter = 'AND e.date >= DATE_SUB(CURDATE(), INTERVAL 1 YEAR)';
+        break;
+      default:
+        dateFilter = 'AND e.date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)';
+    }
+
+    const query = `
+      SELECT 
+        e.category,
+        SUM(e.amount) as total_amount,
+        COUNT(*) as transaction_count,
+        ROUND((SUM(e.amount) / (
+          SELECT NULLIF(SUM(amount), 0)
+          FROM expenses 
+          WHERE user_id = ?
+        )) * 100, 2) as percentage
+      FROM expenses e
+      WHERE e.user_id = ? ${dateFilter}
+      GROUP BY e.category
+      ORDER BY total_amount DESC
+    `;
+
+    console.log('Analytics Query:', query);
+    console.log('User ID:', user_id);
+
     const [results] = await db.execute(query, [user_id, user_id]);
     
     const formattedData = results.map(item => ({
       ...item,
-      total_amount: parseFloat(item.total_amount),
+      total_amount: parseFloat(item.total_amount) || 0,
       percentage: parseFloat(item.percentage) || 0
     }));
+
+    const total = formattedData.reduce((sum, item) => sum + item.total_amount, 0);
 
     res.json({ 
       success: true, 
       data: formattedData,
-      total: formattedData.reduce((sum, item) => sum + item.total_amount, 0)
+      total
     });
   } catch (err) {
     console.error("Error fetching expense analytics:", err);
     res.status(500).json({ 
       success: false, 
       message: "Failed to fetch expense analytics",
-      error: process.env.NODE_ENV === 'development' ? err.message : undefined
+      error: err.message
     });
   }
 };

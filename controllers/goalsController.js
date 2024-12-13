@@ -4,8 +4,8 @@ exports.addGoal = async (req, res) => {
   const { user_id, title, target_amount, target_date } = req.body;
   const query = `
     INSERT INTO goals (
-      user_id, title, target_amount, target_date
-    ) VALUES (?, ?, ?, ?)
+      user_id, title, target_amount, target_date, current_amount
+    ) VALUES (?, ?, ?, ?, 0)
   `;
 
   try {
@@ -22,7 +22,11 @@ exports.addGoal = async (req, res) => {
     });
   } catch (err) {
     console.error("Error adding goal:", err);
-    res.status(500).json({ success: false, message: "Internal server error" });
+    res.status(500).json({ 
+      success: false, 
+      message: "Failed to add goal",
+      error: err.message
+    });
   }
 };
 
@@ -36,35 +40,58 @@ exports.getGoals = async (req, res) => {
     });
   }
 
-  const query = `
-    SELECT 
-      goal_id,
-      user_id,
-      title,
-      target_amount,
-      COALESCE(current_amount, 0) as current_amount,
-      target_date,
-      created_at,
-      updated_at,
-      DATEDIFF(target_date, CURDATE()) as days_remaining,
-      COALESCE((current_amount / target_amount * 100), 0) as progress_percentage
-    FROM goals
-    WHERE user_id = ?
-    ORDER BY created_at DESC
-  `;
-
   try {
+    const [userExists] = await db.execute(
+      "SELECT user_id FROM users WHERE user_id = ?",
+      [user_id]
+    );
+
+    if (userExists.length === 0) {
+      return res.json({ 
+        success: true, 
+        data: [] 
+      });
+    }
+
+    const query = `
+      SELECT 
+        goal_id,
+        user_id,
+        title,
+        target_amount,
+        COALESCE(current_amount, 0) as current_amount,
+        target_date,
+        created_at,
+        updated_at,
+        DATEDIFF(target_date, CURDATE()) as days_remaining,
+        COALESCE(ROUND((current_amount / target_amount * 100), 2), 0) as progress_percentage
+      FROM goals
+      WHERE user_id = ?
+      ORDER BY created_at DESC
+    `;
+
+    console.log('Goals Query:', query);
+    console.log('User ID:', user_id);
+
     const [results] = await db.execute(query, [user_id]);
+    
+    const formattedGoals = results.map(goal => ({
+      ...goal,
+      target_amount: parseFloat(goal.target_amount),
+      current_amount: parseFloat(goal.current_amount),
+      progress_percentage: parseFloat(goal.progress_percentage)
+    }));
+
     res.json({ 
       success: true, 
-      data: results || [] 
+      data: formattedGoals
     });
   } catch (err) {
     console.error("Error fetching goals:", err);
     res.status(500).json({ 
       success: false, 
       message: "Failed to fetch goals",
-      error: process.env.NODE_ENV === 'development' ? err.message : undefined
+      error: err.message
     });
   }
 };
@@ -90,7 +117,11 @@ exports.updateGoal = async (req, res) => {
     res.json({ success: true, message: "Goal updated successfully" });
   } catch (err) {
     console.error("Error updating goal:", err);
-    res.status(500).json({ success: false, message: "Internal server error" });
+    res.status(500).json({ 
+      success: false, 
+      message: "Failed to update goal",
+      error: err.message
+    });
   }
 };
 
@@ -103,7 +134,11 @@ exports.deleteGoal = async (req, res) => {
     res.json({ success: true, message: "Goal deleted successfully" });
   } catch (err) {
     console.error("Error deleting goal:", err);
-    res.status(500).json({ success: false, message: "Internal server error" });
+    res.status(500).json({ 
+      success: false, 
+      message: "Failed to delete goal",
+      error: err.message
+    });
   }
 };
 
@@ -163,8 +198,8 @@ exports.addContribution = async (req, res) => {
     console.error("Error adding contribution:", err);
     res.status(500).json({ 
       success: false, 
-      message: err.message || "Internal server error",
-      details: process.env.NODE_ENV === 'development' ? err.stack : undefined
+      message: "Failed to add contribution",
+      error: err.message
     });
   } finally {
     connection.release();
@@ -187,7 +222,11 @@ exports.getContributions = async (req, res) => {
     res.json({ success: true, data: results });
   } catch (err) {
     console.error("Error fetching contributions:", err);
-    res.status(500).json({ success: false, message: "Internal server error" });
+    res.status(500).json({ 
+      success: false, 
+      message: "Failed to fetch contributions",
+      error: err.message
+    });
   }
 };
 
@@ -211,7 +250,11 @@ exports.deleteContribution = async (req, res) => {
   } catch (err) {
     await connection.rollback();
     console.error("Error deleting contribution:", err);
-    res.status(500).json({ success: false, message: "Internal server error" });
+    res.status(500).json({ 
+      success: false, 
+      message: "Failed to delete contribution",
+      error: err.message
+    });
   } finally {
     connection.release();
   }
