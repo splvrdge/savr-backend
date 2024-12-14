@@ -20,47 +20,58 @@ const pool = mysql.createPool({
 
 async function runMigration() {
     try {
-        // Read the migration file
-        const migrationSQL = fs.readFileSync(
-            path.join(__dirname, '../migrations/20241214_add_categories.sql'),
-            'utf8'
-        );
-
         // Get a connection from the pool
         const connection = await pool.getConnection();
         
         try {
-            // Split the migration into individual statements
-            const statements = migrationSQL
-                .split(';')
-                .filter(stmt => stmt.trim());
+            // List of migrations to run in order
+            const migrations = [
+                '20241214_add_categories.sql',
+                '20241215_fix_goals.sql'
+            ];
 
-            // Execute each statement
-            for (let statement of statements) {
-                if (statement.trim()) {
-                    try {
-                        await connection.query(statement);
-                        console.log('Executed statement successfully');
-                    } catch (err) {
-                        if (err.code === 'ER_DUP_KEYNAME') {
-                            console.log('Index already exists, skipping...');
-                        } else {
-                            console.error('Error executing statement:', err.message);
-                            console.log('Statement:', statement);
+            // Run each migration
+            for (const migrationFile of migrations) {
+                console.log(`Running migration: ${migrationFile}`);
+                
+                // Read the migration file
+                const migrationSQL = fs.readFileSync(
+                    path.join(__dirname, '../migrations', migrationFile),
+                    'utf8'
+                );
+
+                // Split the migration into individual statements
+                const statements = migrationSQL
+                    .split(';')
+                    .filter(stmt => stmt.trim());
+
+                // Execute each statement
+                for (let statement of statements) {
+                    if (statement.trim()) {
+                        try {
+                            await connection.query(statement);
+                            console.log('Executed statement successfully');
+                        } catch (err) {
+                            if (err.code === 'ER_DUP_KEYNAME') {
+                                console.log('Index already exists, skipping...');
+                            } else {
+                                console.error('Error executing statement:', err.message);
+                                console.log('Statement:', statement);
+                            }
                         }
                     }
                 }
+                
+                console.log(`Completed migration: ${migrationFile}`);
             }
-            
-            console.log('Migration completed');
-        } catch (error) {
-            console.error('Error during migration:', error);
-            throw error;
+
+            console.log('All migrations completed successfully');
         } finally {
             connection.release();
         }
-    } catch (error) {
-        console.error('Migration failed:', error);
+    } catch (err) {
+        console.error('Migration failed:', err);
+        process.exit(1);
     } finally {
         await pool.end();
     }
