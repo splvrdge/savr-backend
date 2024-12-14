@@ -17,13 +17,14 @@ app.set('trust proxy', 1);
 
 const PORT = process.env.SERVER_PORT || 3000;
 
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100,
-  message: { success: false, message: "Too many requests, please try again later." }
-});
+// Rate limiter temporarily disabled for testing
+// const limiter = rateLimit({
+//   windowMs: 15 * 60 * 1000,
+//   max: 100,
+//   message: { success: false, message: "Too many requests, please try again later." }
+// });
 
-app.use(limiter);
+// app.use(limiter);
 app.use(bodyParser.json());
 
 const allowedOrigins = [
