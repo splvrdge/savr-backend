@@ -1,6 +1,10 @@
-const mysql = require('mysql2/promise');
-const fs = require('fs');
-const path = require('path');
+import mysql from 'mysql2/promise';
+import fs from 'fs/promises';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Database configuration
 const pool = mysql.createPool({
@@ -10,7 +14,7 @@ const pool = mysql.createPool({
     database: 'savr_db',
     port: 12147,
     ssl: {
-        ca: fs.readFileSync(path.join(__dirname, '../certs/ca.pem')),
+        ca: await fs.readFile(path.join(__dirname, '../certs/ca.pem')),
         rejectUnauthorized: false
     },
     waitForConnections: true,
@@ -21,13 +25,12 @@ const pool = mysql.createPool({
 async function runMigration() {
     try {
         // Get a connection from the pool
-        const connection = await pool.getConnection();
+        let connection = await pool.getConnection();
         
         try {
             // List of migrations to run in order
             const migrations = [
-                '20241214_add_categories.sql',
-                '20241215_fix_goals.sql'
+                '20241215_update_is_completed.sql'
             ];
 
             // Run each migration
@@ -35,7 +38,7 @@ async function runMigration() {
                 console.log(`Running migration: ${migrationFile}`);
                 
                 // Read the migration file
-                const migrationSQL = fs.readFileSync(
+                const migrationSQL = await fs.readFile(
                     path.join(__dirname, '../migrations', migrationFile),
                     'utf8'
                 );
@@ -49,7 +52,7 @@ async function runMigration() {
                 for (let statement of statements) {
                     if (statement.trim()) {
                         try {
-                            await connection.query(statement);
+                            await connection.execute(statement);
                             console.log('Executed statement successfully');
                         } catch (err) {
                             if (err.code === 'ER_DUP_KEYNAME') {
